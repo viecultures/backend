@@ -27,6 +27,7 @@ public class ReadingPostResponse {
     private String readTime;
     private Integer totalReads;
     private Integer likesCount;
+    private Boolean featured;
     private LocalDateTime createdAt;
     private List<ParagraphPairDto> paragraphs;
     private List<VocabItemDto> vocabularies;

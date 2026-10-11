@@ -23,6 +23,7 @@ public class ReadingPostRequest {
     private String shadowingAudioUrl;
     private CefrLevel level;
     private String readTime;
+    private Boolean featured;
     private List<ParagraphPairDto> paragraphs;
     private List<VocabItemDto> vocabularies;
 

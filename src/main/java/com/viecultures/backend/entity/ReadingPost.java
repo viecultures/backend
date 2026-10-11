@@ -68,6 +68,10 @@ public class ReadingPost {
     @Builder.Default
     private Integer likesCount = 0;
 
+    @Column(name = "featured")
+    @Builder.Default
+    private Boolean featured = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

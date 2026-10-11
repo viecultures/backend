@@ -1,5 +1,6 @@
 package com.viecultures.backend.controller;
 
+import com.viecultures.backend.dto.CatalogResponse;
 import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
 import com.viecultures.backend.entity.CefrLevel;
@@ -25,6 +26,20 @@ import java.util.Map;
 public class ReadingPostController {
 
     private final ReadingPostService readingPostService;
+
+    @Operation(summary = "Lấy danh mục bài đọc Discovery (Gom nhóm đa cấp độ)", description = "Gom nhóm theo topicGroup thành Lesson đa cấp độ (Level 1, 2, 3), kèm số lượng theo chủ đề (topicCounts) và phân trang")
+    @GetMapping("/catalog")
+    public ResponseEntity<CatalogResponse> getCatalog(
+            @RequestParam(required = false) String topic,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        CatalogResponse response = readingPostService.getCatalog(topic, level, query, region, sortBy, page, size);
+        return ResponseEntity.ok(response);
+    }
 
     @Operation(summary = "Lấy danh sách bài đọc", description = "Hỗ trợ lọc theo chủ đề (topic), vùng miền (region), nhóm bài (topicGroup), trình độ CEFR (level) và tìm kiếm tự do theo từ khóa")
     @GetMapping

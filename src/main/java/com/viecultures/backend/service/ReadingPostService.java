@@ -1,5 +1,7 @@
 package com.viecultures.backend.service;
 
+import com.viecultures.backend.dto.CatalogLessonDto;
+import com.viecultures.backend.dto.CatalogResponse;
 import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
 import com.viecultures.backend.entity.CefrLevel;
@@ -16,8 +18,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -90,6 +91,7 @@ public class ReadingPostService {
                 .shadowingAudioUrl(request.getShadowingAudioUrl())
                 .level(request.getLevel())
                 .readTime(request.getReadTime())
+                .featured(Boolean.TRUE.equals(request.getFeatured()))
                 .build();
 
         if (request.getParagraphs() != null) {
@@ -145,6 +147,9 @@ public class ReadingPostService {
         post.setShadowingAudioUrl(request.getShadowingAudioUrl());
         post.setLevel(request.getLevel());
         post.setReadTime(request.getReadTime());
+        if (request.getFeatured() != null) {
+            post.setFeatured(request.getFeatured());
+        }
 
         if (request.getParagraphs() != null) {
             post.getParagraphs().clear();
@@ -217,6 +222,7 @@ public class ReadingPostService {
                 .readTime(post.getReadTime())
                 .totalReads(post.getTotalReads())
                 .likesCount(post.getLikesCount())
+                .featured(Boolean.TRUE.equals(post.getFeatured()))
                 .createdAt(post.getCreatedAt());
 
         if (includeDetails) {
@@ -251,5 +257,229 @@ public class ReadingPostService {
         }
 
         return builder.build();
+    }
+
+    @Transactional(readOnly = true)
+    public CatalogResponse getCatalog(String topic, String level, String query, String region, String sortBy, Integer page, Integer size) {
+        List<ReadingPost> allPosts = readingPostRepository.findAll();
+
+        // 1. Group posts by topicGroup or individual id
+        Map<String, List<ReadingPost>> groups = new LinkedHashMap<>();
+        for (ReadingPost post : allPosts) {
+            String key = (post.getTopicGroup() != null && !post.getTopicGroup().isBlank())
+                    ? "group:" + post.getTopicGroup().trim().toLowerCase()
+                    : "id:" + post.getId();
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(post);
+        }
+
+        // 2. Compute topicCounts map across all unique grouped lessons
+        Map<String, Long> topicCounts = new LinkedHashMap<>();
+        topicCounts.put("All", (long) groups.size());
+        topicCounts.put("Heritage", 0L);
+        topicCounts.put("Cuisine", 0L);
+        topicCounts.put("Crafts", 0L);
+        topicCounts.put("Nature", 0L);
+        topicCounts.put("Folklore", 0L);
+
+        List<CatalogLessonDto> lessonList = new ArrayList<>();
+
+        for (List<ReadingPost> groupPosts : groups.values()) {
+            ReadingPost primary = groupPosts.stream()
+                    .filter(p -> p.getLevel() == CefrLevel.B1 || p.getLevel() == CefrLevel.B2)
+                    .findFirst()
+                    .orElse(groupPosts.get(0));
+
+            String category = normalizeCategory(primary.getTopic());
+            topicCounts.put(category, topicCounts.getOrDefault(category, 0L) + 1L);
+
+            List<String> availableLevels = new ArrayList<>();
+            Map<String, CatalogLessonDto.LevelDetailDto> levelDetails = new LinkedHashMap<>();
+
+            for (ReadingPost p : groupPosts) {
+                String levelType = mapCefrToLevelType(p.getLevel());
+                if (!availableLevels.contains(levelType)) {
+                    availableLevels.add(levelType);
+                }
+
+                int vocabCount = (p.getVocabularies() != null) ? p.getVocabularies().size() : 0;
+                String readTimeStr = (p.getReadTime() != null && !p.getReadTime().isBlank())
+                        ? p.getReadTime()
+                        : Math.max(2, (int) Math.ceil((p.getWordCount() != null ? p.getWordCount() : 250) / 100.0)) + " min read";
+
+                CatalogLessonDto.LevelDetailDto detail = CatalogLessonDto.LevelDetailDto.builder()
+                        .postId(p.getId())
+                        .cefrLevel(p.getLevel() != null ? p.getLevel().name() : "B1")
+                        .readTime(readTimeStr)
+                        .vocabCount(vocabCount)
+                        .wordCount(p.getWordCount())
+                        .summary(p.getSummary())
+                        .build();
+
+                levelDetails.put(levelType, detail);
+            }
+
+            availableLevels.sort(String::compareTo);
+
+            int maxVocabCount = levelDetails.values().stream()
+                    .mapToInt(CatalogLessonDto.LevelDetailDto::getVocabCount)
+                    .max()
+                    .orElse(0);
+
+            boolean isFeatured = groupPosts.stream().anyMatch(p -> Boolean.TRUE.equals(p.getFeatured()));
+            int totalReads = groupPosts.stream().mapToInt(p -> p.getTotalReads() != null ? p.getTotalReads() : 0).sum();
+            int totalLikes = groupPosts.stream().mapToInt(p -> p.getLikesCount() != null ? p.getLikesCount() : 0).sum();
+
+            CatalogLessonDto dto = CatalogLessonDto.builder()
+                    .id(primary.getId())
+                    .topicGroup(primary.getTopicGroup())
+                    .titleEn(primary.getTitleEn())
+                    .titleVi(primary.getTitleVi())
+                    .category(category)
+                    .categoryVi(getCategoryVi(category))
+                    .region(primary.getRegion() != null ? primary.getRegion() : "Việt Nam")
+                    .imageUrl(primary.getImageUrl() != null && !primary.getImageUrl().isBlank()
+                            ? primary.getImageUrl()
+                            : "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?auto=format&fit=crop&w=1200&q=80")
+                    .summary(primary.getSummary())
+                    .featured(isFeatured)
+                    .totalReads(totalReads)
+                    .likesCount(totalLikes)
+                    .primaryLevel(availableLevels.contains("Level 2") ? "Level 2" : availableLevels.get(0))
+                    .readTime(primary.getReadTime() != null ? primary.getReadTime() : "4 min read")
+                    .vocabCount(maxVocabCount)
+                    .availableLevels(availableLevels)
+                    .levelDetails(levelDetails)
+                    .createdAt(primary.getCreatedAt())
+                    .build();
+
+            lessonList.add(dto);
+        }
+
+        // 3. Filter by category/topic if requested and not "All"
+        if (topic != null && !topic.isBlank() && !topic.equalsIgnoreCase("All")) {
+            lessonList = lessonList.stream()
+                    .filter(l -> l.getCategory().equalsIgnoreCase(topic.trim()))
+                    .collect(Collectors.toList());
+        }
+
+        // 4. Filter by level if requested and not "All"
+        if (level != null && !level.isBlank() && !level.equalsIgnoreCase("All")) {
+            lessonList = lessonList.stream()
+                    .filter(l -> l.getAvailableLevels().contains(level.trim()))
+                    .collect(Collectors.toList());
+        }
+
+        // 5. Filter by query search
+        if (query != null && !query.isBlank()) {
+            String qLower = query.toLowerCase().trim();
+            lessonList = lessonList.stream()
+                    .filter(l -> (l.getTitleEn() != null && l.getTitleEn().toLowerCase().contains(qLower))
+                            || (l.getTitleVi() != null && l.getTitleVi().toLowerCase().contains(qLower))
+                            || (l.getSummary() != null && l.getSummary().toLowerCase().contains(qLower))
+                            || (l.getRegion() != null && l.getRegion().toLowerCase().contains(qLower))
+                            || (l.getTopicGroup() != null && l.getTopicGroup().toLowerCase().contains(qLower)))
+                    .collect(Collectors.toList());
+        }
+
+        // 6. Filter by region
+        if (region != null && !region.isBlank()) {
+            String rLower = region.toLowerCase().trim();
+            lessonList = lessonList.stream()
+                    .filter(l -> l.getRegion() != null && l.getRegion().toLowerCase().contains(rLower))
+                    .collect(Collectors.toList());
+        }
+
+        // 7. Sort
+        if ("vocab".equalsIgnoreCase(sortBy)) {
+            lessonList.sort((a, b) -> Integer.compare(b.getVocabCount(), a.getVocabCount()));
+        } else if ("time_asc".equalsIgnoreCase(sortBy)) {
+            lessonList.sort(Comparator.comparingInt(this::extractMinutes));
+        } else if ("time_desc".equalsIgnoreCase(sortBy)) {
+            lessonList.sort((a, b) -> Integer.compare(extractMinutes(b), extractMinutes(a)));
+        } else {
+            // "recent" default
+            lessonList.sort((a, b) -> {
+                if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
+                return b.getCreatedAt().compareTo(a.getCreatedAt());
+            });
+        }
+
+        int totalElements = lessonList.size();
+        int pageSize = (size != null && size > 0) ? size : (totalElements > 0 ? totalElements : 12);
+        int pageIndex = (page != null && page >= 0) ? page : 0;
+        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+
+        List<CatalogLessonDto> pagedItems;
+        int start = pageIndex * pageSize;
+        if (start >= totalElements) {
+            pagedItems = Collections.emptyList();
+        } else {
+            int end = Math.min(start + pageSize, totalElements);
+            pagedItems = lessonList.subList(start, end);
+        }
+
+        return CatalogResponse.builder()
+                .items(pagedItems)
+                .page(pageIndex)
+                .size(pageSize)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .topicCounts(topicCounts)
+                .build();
+    }
+
+    private String normalizeCategory(String topic) {
+        if (topic == null || topic.isBlank()) return "Heritage";
+        String lower = topic.toLowerCase();
+        if (lower.contains("ẩm thực") || lower.contains("cuisine") || lower.contains("food") || lower.contains("món")) {
+            return "Cuisine";
+        }
+        if (lower.contains("làng nghề") || lower.contains("craft") || lower.contains("nghề") || lower.contains("gốm") || lower.contains("lụa")) {
+            return "Crafts";
+        }
+        if (lower.contains("thiên nhiên") || lower.contains("nature") || lower.contains("hang") || lower.contains("vịnh") || lower.contains("núi")) {
+            return "Nature";
+        }
+        if (lower.contains("phong tục") || lower.contains("dân gian") || lower.contains("folklore") || lower.contains("truyền thuyết") || lower.contains("lễ hội")) {
+            return "Folklore";
+        }
+        return "Heritage";
+    }
+
+    private String getCategoryVi(String category) {
+        switch (category) {
+            case "Cuisine": return "Ẩm thực & Phong vị";
+            case "Crafts": return "Làng nghề truyền thống";
+            case "Nature": return "Thiên nhiên & Danh thắng";
+            case "Folklore": return "Phong tục & Dân gian";
+            default: return "Di sản văn hóa";
+        }
+    }
+
+    private String mapCefrToLevelType(CefrLevel level) {
+        if (level == null) return "Level 2";
+        switch (level) {
+            case A1:
+            case A2:
+                return "Level 1";
+            case B1:
+            case B2:
+                return "Level 2";
+            case C1:
+            case C2:
+                return "Level 3";
+            default:
+                return "Level 2";
+        }
+    }
+
+    private int extractMinutes(CatalogLessonDto dto) {
+        if (dto.getReadTime() == null) return 4;
+        try {
+            String digits = dto.getReadTime().replaceAll("[^0-9]", "");
+            return digits.isEmpty() ? 4 : Integer.parseInt(digits);
+        } catch (Exception e) {
+            return 4;
+        }
     }
 }
