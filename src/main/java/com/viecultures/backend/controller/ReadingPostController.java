@@ -4,6 +4,9 @@ import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.service.ReadingPostService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,13 +21,12 @@ import java.util.Map;
 @RequestMapping("/api/posts")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@Tag(name = "1. Reading Posts & Vocabularies", description = "Quản lý bài đọc song ngữ, các cặp đoạn văn và từ vựng học thuật")
 public class ReadingPostController {
 
     private final ReadingPostService readingPostService;
 
-    /**
-     * Lấy danh sách bài đọc (hỗ trợ lọc theo topic, level, và từ khóa tìm kiếm)
-     */
+    @Operation(summary = "Lấy danh sách bài đọc", description = "Hỗ trợ lọc theo chủ đề (topic), trình độ CEFR (level) và tìm kiếm tự do theo từ khóa")
     @GetMapping
     public ResponseEntity<List<ReadingPostResponse>> getPosts(
             @RequestParam(required = false) String topic,
@@ -34,27 +36,21 @@ public class ReadingPostController {
         return ResponseEntity.ok(posts);
     }
 
-    /**
-     * Xem chi tiết 1 bài đọc (kèm danh sách đoạn song ngữ và từ vựng ngữ cảnh)
-     */
+    @Operation(summary = "Xem chi tiết bài đọc", description = "Lấy đầy đủ thông tin bài đọc cùng danh sách đoạn văn song ngữ và từ vựng học thuật")
     @GetMapping("/{id}")
     public ResponseEntity<ReadingPostResponse> getPostById(@PathVariable String id) {
         ReadingPostResponse post = readingPostService.getPostById(id);
         return ResponseEntity.ok(post);
     }
 
-    /**
-     * Tạo bài đọc mới
-     */
+    @Operation(summary = "Tạo mới bài đọc", description = "Tạo bài đọc mới kèm các đoạn song ngữ và từ vựng trích xuất")
     @PostMapping
     public ResponseEntity<ReadingPostResponse> createPost(@RequestBody ReadingPostRequest request) {
         ReadingPostResponse created = readingPostService.createPost(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    /**
-     * Cập nhật bài đọc theo ID
-     */
+    @Operation(summary = "Cập nhật bài đọc", description = "Cập nhật thông tin bài đọc, danh sách đoạn văn và từ vựng theo ID")
     @PutMapping("/{id}")
     public ResponseEntity<ReadingPostResponse> updatePost(
             @PathVariable String id,
@@ -63,9 +59,7 @@ public class ReadingPostController {
         return ResponseEntity.ok(updated);
     }
 
-    /**
-     * Xóa bài đọc theo ID
-     */
+    @Operation(summary = "Xóa bài đọc", description = "Xóa bài đọc và các dữ liệu liên kết liên quan theo ID")
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deletePost(@PathVariable String id) {
         readingPostService.deletePost(id);
@@ -76,9 +70,7 @@ public class ReadingPostController {
         ));
     }
 
-    /**
-     * Tăng số lượt đọc khi người dùng mở bài
-     */
+    @Operation(summary = "Tăng lượt đọc bài", description = "Ghi nhận 1 lượt đọc mới khi người dùng mở bài")
     @PostMapping("/{id}/read")
     public ResponseEntity<Map<String, Object>> incrementReadCount(@PathVariable String id) {
         readingPostService.incrementReads(id);
