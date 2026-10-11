@@ -18,7 +18,7 @@ public class VieculturesBackendApplication {
     /**
      * Automatically scan and load .env variables into System properties if not already set.
      */
-    private static void loadDotEnv() {
+    static void loadDotEnv() {
         String[] possiblePaths = {".env", "backend/.env", "../.env"};
         for (String path : possiblePaths) {
             File file = new File(path);

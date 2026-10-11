@@ -105,9 +105,70 @@ public class GeminiVoiceService {
     }
 
     /**
+     * Sinh dữ liệu âm thanh byte[] trực tiếp từ Gemini API cho TTS Service
+     */
+    public byte[] synthesizeAudioBytes(String textContent, String voiceName) throws Exception {
+        if (textContent == null || textContent.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nội dung textContent không được để trống");
+        }
+        String resolvedVoice = mapVoiceToGemini(voiceName);
+
+        List<String> modelsToTry = new ArrayList<>();
+        modelsToTry.add(geminiModel);
+        for (String m : GEMINI_MODELS) {
+            if (!modelsToTry.contains(m)) {
+                modelsToTry.add(m);
+            }
+        }
+
+        Exception lastException = null;
+        for (String model : modelsToTry) {
+            try {
+                log.info("Synthesizing audio bytes via Google Gemini API: model={}, voice={}", model, resolvedVoice);
+                return callGeminiAudioApi(textContent, resolvedVoice, model);
+            } catch (HttpStatusCodeException httpEx) {
+                lastException = httpEx;
+                log.warn("Gemini model [{}] returned HTTP {}: {}", model, httpEx.getStatusCode(), httpEx.getResponseBodyAsString());
+                if (httpEx.getStatusCode().value() == 429 || httpEx.getStatusCode().value() == 404) {
+                    continue;
+                }
+                break;
+            } catch (Exception e) {
+                lastException = e;
+                log.error("Gemini model [{}] error: {}", model, e.getMessage());
+            }
+        }
+
+        throw new RuntimeException("Không thể sinh voice từ Google Gemini API: " +
+                (lastException != null ? lastException.getMessage() : "Unknown error"), lastException);
+    }
+
+    public String mapVoiceToGemini(String voiceName) {
+        if (voiceName == null || voiceName.trim().isEmpty()) {
+            return "Puck";
+        }
+        String v = voiceName.trim();
+        if (List.of("Puck", "Charon", "Kore", "Fenrir", "Aoede").contains(v)) {
+            return v;
+        }
+        String lower = v.toLowerCase();
+        if (lower.contains("jenny") || lower.contains("aria") || lower.contains("female")) {
+            return "Aoede";
+        }
+        return "Puck";
+    }
+
+    /**
      * Primary generator: Google Gemini API with Audio Modality
      */
     private String generateWithGemini(String textContent, String voiceName, String outputFilename, String model) throws Exception {
+        byte[] audioBytes = callGeminiAudioApi(textContent, voiceName, model);
+        saveAudioFile(audioBytes, outputFilename);
+        log.info("Successfully generated Gemini voice! File: {}, Size: {} bytes", outputFilename, audioBytes.length);
+        return "/audio/" + outputFilename;
+    }
+
+    private byte[] callGeminiAudioApi(String textContent, String voiceName, String model) throws Exception {
         String prompt = "You are a professional English teacher. Read the following text verbatim, clearly and naturally with proper pauses:\n\n" + textContent;
 
         Map<String, Object> textPart = Map.of("text", prompt);
@@ -167,9 +228,7 @@ public class GeminiVoiceService {
             audioBytes = wrapPcmInWav(audioBytes, 24000, 1, 16);
         }
 
-        saveAudioFile(audioBytes, outputFilename);
-        log.info("Successfully generated Gemini voice! File: {}, Size: {} bytes", outputFilename, audioBytes.length);
-        return "/audio/" + outputFilename;
+        return audioBytes;
     }
 
     private boolean hasAudioHeader(byte[] data) {

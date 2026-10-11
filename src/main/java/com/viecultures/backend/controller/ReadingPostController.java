@@ -20,7 +20,6 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/posts")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Tag(name = "1. Reading Posts & Vocabularies", description = "Quản lý bài đọc song ngữ, các cặp đoạn văn và từ vựng học thuật")
 public class ReadingPostController {

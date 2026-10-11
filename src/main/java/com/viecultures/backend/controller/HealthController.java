@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/health")
-@CrossOrigin(origins = "*")
 @Tag(name = "0. System Health", description = "Kiểm tra tình trạng hoạt động của dịch vụ")
 public class HealthController {
 

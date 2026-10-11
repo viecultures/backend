@@ -17,7 +17,6 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/voice")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Tag(name = "2. Gemini Neural Voice", description = "Dịch vụ chuyển văn bản thành giọng nói (TTS) qua Google Gemini API")
 public class VoiceController {
