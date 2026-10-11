@@ -30,12 +30,20 @@ public class ReadingPostService {
     private final VocabItemRepository vocabItemRepository;
 
     @Transactional(readOnly = true)
-    public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query) {
+    public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query, String region, String topicGroup) {
         Specification<ReadingPost> spec = (root, q, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (topic != null && !topic.isBlank()) {
                 predicates.add(cb.equal(cb.lower(root.get("topic")), topic.toLowerCase().trim()));
+            }
+
+            if (region != null && !region.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("region")), region.toLowerCase().trim()));
+            }
+
+            if (topicGroup != null && !topicGroup.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("topicGroup")), topicGroup.toLowerCase().trim()));
             }
 
             if (level != null) {
@@ -46,7 +54,8 @@ public class ReadingPostService {
                 String pattern = "%" + query.toLowerCase().trim() + "%";
                 Predicate matchEn = cb.like(cb.lower(root.get("titleEn")), pattern);
                 Predicate matchVi = cb.like(cb.lower(root.get("titleVi")), pattern);
-                predicates.add(cb.or(matchEn, matchVi));
+                Predicate matchTopicGroup = cb.like(cb.lower(root.get("topicGroup")), pattern);
+                predicates.add(cb.or(matchEn, matchVi, matchTopicGroup));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -68,11 +77,16 @@ public class ReadingPostService {
     @Transactional
     public ReadingPostResponse createPost(ReadingPostRequest request) {
         ReadingPost post = ReadingPost.builder()
+                .topicGroup(request.getTopicGroup())
                 .titleEn(request.getTitleEn())
                 .titleVi(request.getTitleVi())
                 .topic(request.getTopic())
+                .region(request.getRegion())
                 .imageUrl(request.getImageUrl())
+                .wordCount(request.getWordCount())
                 .summary(request.getSummary())
+                .contentEn(request.getContentEn())
+                .contentVi(request.getContentVi())
                 .shadowingAudioUrl(request.getShadowingAudioUrl())
                 .level(request.getLevel())
                 .readTime(request.getReadTime())
@@ -118,11 +132,16 @@ public class ReadingPostService {
         ReadingPost post = readingPostRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Bài đọc không tồn tại với ID: " + id));
 
+        post.setTopicGroup(request.getTopicGroup());
         post.setTitleEn(request.getTitleEn());
         post.setTitleVi(request.getTitleVi());
         post.setTopic(request.getTopic());
+        post.setRegion(request.getRegion());
         post.setImageUrl(request.getImageUrl());
+        post.setWordCount(request.getWordCount());
         post.setSummary(request.getSummary());
+        post.setContentEn(request.getContentEn());
+        post.setContentVi(request.getContentVi());
         post.setShadowingAudioUrl(request.getShadowingAudioUrl());
         post.setLevel(request.getLevel());
         post.setReadTime(request.getReadTime());
@@ -183,11 +202,16 @@ public class ReadingPostService {
     public ReadingPostResponse toResponse(ReadingPost post, boolean includeDetails) {
         ReadingPostResponse.ReadingPostResponseBuilder builder = ReadingPostResponse.builder()
                 .id(post.getId())
+                .topicGroup(post.getTopicGroup())
                 .titleEn(post.getTitleEn())
                 .titleVi(post.getTitleVi())
                 .topic(post.getTopic())
+                .region(post.getRegion())
                 .imageUrl(post.getImageUrl())
+                .wordCount(post.getWordCount())
                 .summary(post.getSummary())
+                .contentEn(post.getContentEn())
+                .contentVi(post.getContentVi())
                 .shadowingAudioUrl(post.getShadowingAudioUrl())
                 .level(post.getLevel())
                 .readTime(post.getReadTime())

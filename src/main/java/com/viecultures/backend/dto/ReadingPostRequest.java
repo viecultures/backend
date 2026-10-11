@@ -10,11 +10,16 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReadingPostRequest {
+    private String topicGroup;
     private String titleEn;
     private String titleVi;
     private String topic;
+    private String region;
     private String imageUrl;
+    private Integer wordCount;
     private String summary;
+    private String contentEn;
+    private String contentVi;
     private String shadowingAudioUrl;
     private CefrLevel level;
     private String readTime;

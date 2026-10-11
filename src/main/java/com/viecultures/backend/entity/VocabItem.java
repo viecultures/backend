@@ -30,13 +30,13 @@ public class VocabItem {
 
     private String ipa;
 
-    @Column(nullable = false)
-    private String pos; // Part of speech: noun, verb, adj, adv...
+    @Column
+    private String pos; // Part of speech: noun, verb, adj, phrase...
 
     @Column(name = "vi_meaning", nullable = false)
     private String viMeaning;
 
-    @Column(name = "context_sentence", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "context_sentence", columnDefinition = "TEXT")
     private String contextSentence;
 
     @Column(name = "audio_url")

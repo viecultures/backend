@@ -26,13 +26,15 @@ public class ReadingPostController {
 
     private final ReadingPostService readingPostService;
 
-    @Operation(summary = "Lấy danh sách bài đọc", description = "Hỗ trợ lọc theo chủ đề (topic), trình độ CEFR (level) và tìm kiếm tự do theo từ khóa")
+    @Operation(summary = "Lấy danh sách bài đọc", description = "Hỗ trợ lọc theo chủ đề (topic), vùng miền (region), nhóm bài (topicGroup), trình độ CEFR (level) và tìm kiếm tự do theo từ khóa")
     @GetMapping
     public ResponseEntity<List<ReadingPostResponse>> getPosts(
             @RequestParam(required = false) String topic,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String topicGroup,
             @RequestParam(required = false) CefrLevel level,
             @RequestParam(required = false) String query) {
-        List<ReadingPostResponse> posts = readingPostService.getPosts(topic, level, query);
+        List<ReadingPostResponse> posts = readingPostService.getPosts(topic, level, query, region, topicGroup);
         return ResponseEntity.ok(posts);
     }
 

@@ -20,6 +20,9 @@ public class ReadingPost {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(name = "topic_group")
+    private String topicGroup;
+
     @Column(name = "title_en", nullable = false)
     private String titleEn;
 
@@ -29,11 +32,23 @@ public class ReadingPost {
     @Column(nullable = false)
     private String topic;
 
+    @Column(name = "region")
+    private String region;
+
     @Column(name = "image_url")
     private String imageUrl;
 
+    @Column(name = "word_count")
+    private Integer wordCount;
+
     @Column(columnDefinition = "TEXT")
     private String summary;
+
+    @Column(name = "content_en", columnDefinition = "TEXT")
+    private String contentEn;
+
+    @Column(name = "content_vi", columnDefinition = "TEXT")
+    private String contentVi;
 
     @Column(name = "shadowing_audio_url")
     private String shadowingAudioUrl;
