@@ -1,0 +1,215 @@
+package com.viecultures.backend.service;
+
+import com.viecultures.backend.dto.ReadingPostRequest;
+import com.viecultures.backend.dto.ReadingPostResponse;
+import com.viecultures.backend.entity.CefrLevel;
+import com.viecultures.backend.entity.ParagraphPair;
+import com.viecultures.backend.entity.ReadingPost;
+import com.viecultures.backend.entity.VocabItem;
+import com.viecultures.backend.repository.ParagraphPairRepository;
+import com.viecultures.backend.repository.ReadingPostRepository;
+import com.viecultures.backend.repository.VocabItemRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ReadingPostService {
+
+    private final ReadingPostRepository readingPostRepository;
+    private final ParagraphPairRepository paragraphPairRepository;
+    private final VocabItemRepository vocabItemRepository;
+
+    @Transactional(readOnly = true)
+    public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query) {
+        List<ReadingPost> posts = readingPostRepository.searchPosts(
+                (topic != null && !topic.isBlank()) ? topic : null,
+                level,
+                (query != null && !query.isBlank()) ? query : null
+        );
+
+        return posts.stream()
+                .map(p -> toResponse(p, false))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ReadingPostResponse getPostById(String id) {
+        ReadingPost post = readingPostRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Bài đọc không tồn tại với ID: " + id));
+        return toResponse(post, true);
+    }
+
+    @Transactional
+    public ReadingPostResponse createPost(ReadingPostRequest request) {
+        ReadingPost post = ReadingPost.builder()
+                .titleEn(request.getTitleEn())
+                .titleVi(request.getTitleVi())
+                .topic(request.getTopic())
+                .imageUrl(request.getImageUrl())
+                .summary(request.getSummary())
+                .shadowingAudioUrl(request.getShadowingAudioUrl())
+                .level(request.getLevel())
+                .readTime(request.getReadTime())
+                .build();
+
+        if (request.getParagraphs() != null) {
+            for (ReadingPostRequest.ParagraphPairDto pDto : request.getParagraphs()) {
+                ParagraphPair pair = ParagraphPair.builder()
+                        .readingPost(post)
+                        .orderIndex(pDto.getOrderIndex())
+                        .enText(pDto.getEnText())
+                        .viText(pDto.getViText())
+                        .audioTimestampStart(pDto.getAudioTimestampStart())
+                        .audioTimestampEnd(pDto.getAudioTimestampEnd())
+                        .build();
+                post.getParagraphs().add(pair);
+            }
+        }
+
+        if (request.getVocabularies() != null) {
+            for (ReadingPostRequest.VocabItemDto vDto : request.getVocabularies()) {
+                VocabItem vocab = VocabItem.builder()
+                        .readingPost(post)
+                        .word(vDto.getWord())
+                        .ipa(vDto.getIpa())
+                        .pos(vDto.getPos())
+                        .viMeaning(vDto.getViMeaning())
+                        .contextSentence(vDto.getContextSentence())
+                        .audioUrl(vDto.getAudioUrl())
+                        .level(vDto.getLevel())
+                        .usageNote(vDto.getUsageNote())
+                        .build();
+                post.getVocabularies().add(vocab);
+            }
+        }
+
+        ReadingPost saved = readingPostRepository.save(post);
+        return toResponse(saved, true);
+    }
+
+    @Transactional
+    public ReadingPostResponse updatePost(String id, ReadingPostRequest request) {
+        ReadingPost post = readingPostRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Bài đọc không tồn tại với ID: " + id));
+
+        post.setTitleEn(request.getTitleEn());
+        post.setTitleVi(request.getTitleVi());
+        post.setTopic(request.getTopic());
+        post.setImageUrl(request.getImageUrl());
+        post.setSummary(request.getSummary());
+        post.setShadowingAudioUrl(request.getShadowingAudioUrl());
+        post.setLevel(request.getLevel());
+        post.setReadTime(request.getReadTime());
+
+        // Update paragraphs if provided
+        if (request.getParagraphs() != null) {
+            post.getParagraphs().clear();
+            for (ReadingPostRequest.ParagraphPairDto pDto : request.getParagraphs()) {
+                ParagraphPair pair = ParagraphPair.builder()
+                        .readingPost(post)
+                        .orderIndex(pDto.getOrderIndex())
+                        .enText(pDto.getEnText())
+                        .viText(pDto.getViText())
+                        .audioTimestampStart(pDto.getAudioTimestampStart())
+                        .audioTimestampEnd(pDto.getAudioTimestampEnd())
+                        .build();
+                post.getParagraphs().add(pair);
+            }
+        }
+
+        // Update vocabs if provided
+        if (request.getVocabularies() != null) {
+            post.getVocabularies().clear();
+            for (ReadingPostRequest.VocabItemDto vDto : request.getVocabularies()) {
+                VocabItem vocab = VocabItem.builder()
+                        .readingPost(post)
+                        .word(vDto.getWord())
+                        .ipa(vDto.getIpa())
+                        .pos(vDto.getPos())
+                        .viMeaning(vDto.getViMeaning())
+                        .contextSentence(vDto.getContextSentence())
+                        .audioUrl(vDto.getAudioUrl())
+                        .level(vDto.getLevel())
+                        .usageNote(vDto.getUsageNote())
+                        .build();
+                post.getVocabularies().add(vocab);
+            }
+        }
+
+        ReadingPost updated = readingPostRepository.save(post);
+        return toResponse(updated, true);
+    }
+
+    @Transactional
+    public void deletePost(String id) {
+        if (!readingPostRepository.existsById(id)) {
+            throw new RuntimeException("Bài đọc không tồn tại với ID: " + id);
+        }
+        readingPostRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void incrementReads(String id) {
+        readingPostRepository.findById(id).ifPresent(post -> {
+            post.setTotalReads(post.getTotalReads() == null ? 1 : post.getTotalReads() + 1);
+            readingPostRepository.save(post);
+        });
+    }
+
+    public ReadingPostResponse toResponse(ReadingPost post, boolean includeDetails) {
+        ReadingPostResponse.ReadingPostResponseBuilder builder = ReadingPostResponse.builder()
+                .id(post.getId())
+                .titleEn(post.getTitleEn())
+                .titleVi(post.getTitleVi())
+                .topic(post.getTopic())
+                .imageUrl(post.getImageUrl())
+                .summary(post.getSummary())
+                .shadowingAudioUrl(post.getShadowingAudioUrl())
+                .level(post.getLevel())
+                .readTime(post.getReadTime())
+                .totalReads(post.getTotalReads())
+                .likesCount(post.getLikesCount())
+                .createdAt(post.getCreatedAt());
+
+        if (includeDetails) {
+            if (post.getParagraphs() != null) {
+                builder.paragraphs(post.getParagraphs().stream()
+                        .map(p -> ReadingPostResponse.ParagraphPairDto.builder()
+                                .id(p.getId())
+                                .orderIndex(p.getOrderIndex())
+                                .enText(p.getEnText())
+                                .viText(p.getViText())
+                                .audioTimestampStart(p.getAudioTimestampStart())
+                                .audioTimestampEnd(p.getAudioTimestampEnd())
+                                .build())
+                        .collect(Collectors.toList()));
+            }
+
+            if (post.getVocabularies() != null) {
+                builder.vocabularies(post.getVocabularies().stream()
+                        .map(v -> ReadingPostResponse.VocabItemDto.builder()
+                                .id(v.getId())
+                                .word(v.getWord())
+                                .ipa(v.getIpa())
+                                .pos(v.getPos())
+                                .viMeaning(v.getViMeaning())
+                                .contextSentence(v.getContextSentence())
+                                .audioUrl(v.getAudioUrl())
+                                .level(v.getLevel())
+                                .usageNote(v.getUsageNote())
+                                .build())
+                        .collect(Collectors.toList()));
+            }
+        }
+
+        return builder.build();
+    }
+}
