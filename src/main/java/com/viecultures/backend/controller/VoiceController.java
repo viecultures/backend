@@ -3,12 +3,13 @@ package com.viecultures.backend.controller;
 import com.viecultures.backend.dto.VoiceGenerateRequest;
 import com.viecultures.backend.dto.VoiceGenerateResponse;
 import com.viecultures.backend.service.GeminiVoiceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -18,13 +19,12 @@ import java.util.Map;
 @RequestMapping("/api/voice")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@Tag(name = "2. Gemini Neural Voice", description = "Dịch vụ chuyển văn bản thành giọng nói (TTS) qua Google Gemini API")
 public class VoiceController {
 
     private final GeminiVoiceService geminiVoiceService;
 
-    /**
-     * Danh sách giọng đọc hỗ trợ trong Gemini API
-     */
+    @Operation(summary = "Lấy danh sách giọng đọc Gemini", description = "Trả về danh sách 5 giọng đọc AI chất lượng cao (Puck, Charon, Kore, Fenrir, Aoede)")
     @GetMapping("/voices")
     public ResponseEntity<List<Map<String, String>>> listVoices() {
         List<Map<String, String>> voices = List.of(
@@ -39,9 +39,7 @@ public class VoiceController {
         return ResponseEntity.ok(voices);
     }
 
-    /**
-     * Sinh file voice cho bài viết mới
-     */
+    @Operation(summary = "Sinh file âm thanh AI cho bài đọc", description = "Gọi Google Gemini API sinh file âm thanh WAV và lưu trữ sẵn cho web phát trực tiếp")
     @PostMapping("/generate")
     public ResponseEntity<VoiceGenerateResponse> generateVoice(@RequestBody VoiceGenerateRequest request) {
         log.info("Received request to generate voice for: voice={}, filename={}",

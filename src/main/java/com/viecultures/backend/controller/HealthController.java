@@ -1,5 +1,7 @@
 package com.viecultures.backend.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/health")
 @CrossOrigin(origins = "*")
+@Tag(name = "0. System Health", description = "Kiểm tra tình trạng hoạt động của dịch vụ")
 public class HealthController {
 
     @Data
@@ -23,6 +26,7 @@ public class HealthController {
         private LocalDateTime timestamp;
     }
 
+    @Operation(summary = "Kiểm tra sức khỏe hệ thống", description = "Trả về trạng thái UP và thời gian hệ thống")
     @GetMapping
     public ResponseEntity<HealthResponse> checkHealth() {
         HealthResponse response = HealthResponse.builder()
