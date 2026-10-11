@@ -23,6 +23,7 @@ public class ReadingPostResponse {
     private String contentEn;
     private String contentVi;
     private String shadowingAudioUrl;
+    private String audioTracks;
     private CefrLevel level;
     private String readTime;
     private Integer totalReads;

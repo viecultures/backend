@@ -53,6 +53,9 @@ public class ReadingPost {
     @Column(name = "shadowing_audio_url")
     private String shadowingAudioUrl;
 
+    @Column(name = "audio_tracks", columnDefinition = "TEXT")
+    private String audioTracks;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CefrLevel level;

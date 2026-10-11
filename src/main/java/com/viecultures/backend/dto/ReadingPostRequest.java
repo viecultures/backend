@@ -21,6 +21,7 @@ public class ReadingPostRequest {
     private String contentEn;
     private String contentVi;
     private String shadowingAudioUrl;
+    private String audioTracks;
     private CefrLevel level;
     private String readTime;
     private Boolean featured;

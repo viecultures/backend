@@ -89,6 +89,7 @@ public class ReadingPostService {
                 .contentEn(request.getContentEn())
                 .contentVi(request.getContentVi())
                 .shadowingAudioUrl(request.getShadowingAudioUrl())
+                .audioTracks(request.getAudioTracks())
                 .level(request.getLevel())
                 .readTime(request.getReadTime())
                 .featured(Boolean.TRUE.equals(request.getFeatured()))
@@ -145,6 +146,7 @@ public class ReadingPostService {
         post.setContentEn(request.getContentEn());
         post.setContentVi(request.getContentVi());
         post.setShadowingAudioUrl(request.getShadowingAudioUrl());
+        post.setAudioTracks(request.getAudioTracks());
         post.setLevel(request.getLevel());
         post.setReadTime(request.getReadTime());
         if (request.getFeatured() != null) {
@@ -218,6 +220,7 @@ public class ReadingPostService {
                 .contentEn(post.getContentEn())
                 .contentVi(post.getContentVi())
                 .shadowingAudioUrl(post.getShadowingAudioUrl())
+                .audioTracks(post.getAudioTracks())
                 .level(post.getLevel())
                 .readTime(post.getReadTime())
                 .totalReads(post.getTotalReads())

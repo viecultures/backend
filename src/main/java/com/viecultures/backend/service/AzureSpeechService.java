@@ -134,10 +134,16 @@ public class AzureSpeechService {
      * Tự động ánh xạ tên giọng Gemini nếu client truyền voice Gemini sang Azure voice
      */
     private String mapVoice(String voice) {
-        if (voice.equalsIgnoreCase("Puck") || voice.equalsIgnoreCase("Fenrir") || voice.equalsIgnoreCase("Charon")) {
+        if (voice.equalsIgnoreCase("Amanda") || voice.equalsIgnoreCase("en-US-AmandaMultilingualNeural")) {
+            return "en-US-AmandaMultilingualNeural";
+        }
+        if (voice.equalsIgnoreCase("Dustin") || voice.equalsIgnoreCase("en-US-DustinMultilingualNeural")) {
+            return "en-US-DustinMultilingualNeural";
+        }
+        if (voice.equalsIgnoreCase("Puck") || voice.equalsIgnoreCase("Fenrir") || voice.equalsIgnoreCase("Charon") || voice.equalsIgnoreCase("Guy")) {
             return "en-US-GuyNeural";
         }
-        if (voice.equalsIgnoreCase("Aoede") || voice.equalsIgnoreCase("Kore")) {
+        if (voice.equalsIgnoreCase("Aoede") || voice.equalsIgnoreCase("Kore") || voice.equalsIgnoreCase("Jenny")) {
             return "en-US-JennyNeural";
         }
         return voice;

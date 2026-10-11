@@ -152,8 +152,11 @@ public class GeminiVoiceService {
             return v;
         }
         String lower = v.toLowerCase();
-        if (lower.contains("jenny") || lower.contains("aria") || lower.contains("female")) {
+        if (lower.contains("amanda") || lower.contains("jenny") || lower.contains("aria") || lower.contains("female")) {
             return "Aoede";
+        }
+        if (lower.contains("dustin") || lower.contains("guy") || lower.contains("davis") || lower.contains("male")) {
+            return "Puck";
         }
         return "Puck";
     }
