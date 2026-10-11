@@ -9,8 +9,10 @@ import com.viecultures.backend.entity.VocabItem;
 import com.viecultures.backend.repository.ParagraphPairRepository;
 import com.viecultures.backend.repository.ReadingPostRepository;
 import com.viecultures.backend.repository.VocabItemRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,12 +31,28 @@ public class ReadingPostService {
 
     @Transactional(readOnly = true)
     public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query) {
-        List<ReadingPost> posts = readingPostRepository.searchPosts(
-                (topic != null && !topic.isBlank()) ? topic : null,
-                level,
-                (query != null && !query.isBlank()) ? query : null
-        );
+        Specification<ReadingPost> spec = (root, q, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
+            if (topic != null && !topic.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("topic")), topic.toLowerCase().trim()));
+            }
+
+            if (level != null) {
+                predicates.add(cb.equal(root.get("level"), level));
+            }
+
+            if (query != null && !query.isBlank()) {
+                String pattern = "%" + query.toLowerCase().trim() + "%";
+                Predicate matchEn = cb.like(cb.lower(root.get("titleEn")), pattern);
+                Predicate matchVi = cb.like(cb.lower(root.get("titleVi")), pattern);
+                predicates.add(cb.or(matchEn, matchVi));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        List<ReadingPost> posts = readingPostRepository.findAll(spec);
         return posts.stream()
                 .map(p -> toResponse(p, false))
                 .collect(Collectors.toList());
@@ -109,7 +127,6 @@ public class ReadingPostService {
         post.setLevel(request.getLevel());
         post.setReadTime(request.getReadTime());
 
-        // Update paragraphs if provided
         if (request.getParagraphs() != null) {
             post.getParagraphs().clear();
             for (ReadingPostRequest.ParagraphPairDto pDto : request.getParagraphs()) {
@@ -125,7 +142,6 @@ public class ReadingPostService {
             }
         }
 
-        // Update vocabs if provided
         if (request.getVocabularies() != null) {
             post.getVocabularies().clear();
             for (ReadingPostRequest.VocabItemDto vDto : request.getVocabularies()) {
