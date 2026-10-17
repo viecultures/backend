@@ -17,6 +17,9 @@ import java.time.LocalDateTime;
 public class AuthResponse {
 
     @Schema(description = "Chuỗi JWT Bearer token")
+    private String token;
+
+    @Schema(description = "Chuỗi JWT Bearer token (alias)")
     private String accessToken;
 
     @Builder.Default
@@ -24,10 +27,18 @@ public class AuthResponse {
     private String tokenType = "Bearer";
 
     @Schema(description = "Thời gian hết hạn của token (tính bằng mili-giây)", example = "604800000")
-    private long expiresIn;
+    private Long expiresIn;
 
     @Schema(description = "Thông tin tóm tắt của người dùng đăng nhập")
-    private UserInfo user;
+    private AuthUserDto user;
+
+    public String getToken() {
+        return token != null ? token : accessToken;
+    }
+
+    public String getAccessToken() {
+        return accessToken != null ? accessToken : token;
+    }
 
     @Data
     @Builder

@@ -2,12 +2,13 @@ package com.viecultures.backend.service;
 
 import com.viecultures.backend.dto.AuthRequest;
 import com.viecultures.backend.dto.AuthResponse;
+import com.viecultures.backend.dto.AuthUserDto;
 import com.viecultures.backend.dto.GoogleLoginRequest;
 import com.viecultures.backend.dto.RegisterRequest;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.User;
 import com.viecultures.backend.repository.UserRepository;
-import com.viecultures.backend.security.jwt.JwtService;
+import com.viecultures.backend.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -45,14 +46,15 @@ public class AuthServiceImpl implements AuthService {
         log.info("Attempting login for email: {}", request.getEmail());
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail().trim().toLowerCase(), request.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(request.getEmail().trim().toLowerCase(),
+                            request.getPassword()));
         } catch (BadCredentialsException ex) {
             throw new IllegalArgumentException("Email hoặc mật khẩu không chính xác");
         }
 
         User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng với email: " + request.getEmail()));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy người dùng với email: " + request.getEmail()));
 
         if (!user.isEnabled()) {
             throw new IllegalStateException("Tài khoản đã bị tạm khóa hoặc chưa được kích hoạt");
@@ -101,8 +103,8 @@ public class AuthServiceImpl implements AuthService {
                         verifyUrl,
                         HttpMethod.GET,
                         null,
-                        new ParameterizedTypeReference<>() {}
-                );
+                        new ParameterizedTypeReference<>() {
+                        });
 
                 Map<String, Object> body = response.getBody();
                 if (body != null && body.containsKey("email")) {
@@ -116,14 +118,17 @@ public class AuthServiceImpl implements AuthService {
                 }
             } catch (Exception e) {
                 log.error("Google token verification failed: {}", e.getMessage());
-                // Nếu verify thất bại nhưng client gửi profile trực tiếp (chế độ dev / fallback)
+                // Nếu verify thất bại nhưng client gửi profile trực tiếp (chế độ dev /
+                // fallback)
                 if (request.getEmail() == null || request.getEmail().isBlank()) {
-                    throw new IllegalArgumentException("Mã xác thực Google không hợp lệ hoặc đã hết hạn: " + e.getMessage());
+                    throw new IllegalArgumentException(
+                            "Mã xác thực Google không hợp lệ hoặc đã hết hạn: " + e.getMessage());
                 }
             }
         }
 
-        // 2. Sử dụng fallback trực tiếp từ request payload nếu tokeninfo không giải mã được
+        // 2. Sử dụng fallback trực tiếp từ request payload nếu tokeninfo không giải mã
+        // được
         if (email == null && request.getEmail() != null && !request.getEmail().isBlank()) {
             email = request.getEmail().trim().toLowerCase();
             name = request.getName();
@@ -196,18 +201,29 @@ public class AuthServiceImpl implements AuthService {
     private AuthResponse buildAuthResponse(User user) {
         Map<String, Object> extraClaims = Map.of(
                 "userId", user.getId(),
-                "role", user.getRole() != null ? user.getRole() : "ROLE_USER",
+                "role", user.getRole() != null ? user.getRole() : "STUDENT",
                 "name", user.getName(),
-                "authProvider", user.getAuthProvider() != null ? user.getAuthProvider() : "LOCAL"
-        );
+                "authProvider", user.getAuthProvider() != null ? user.getAuthProvider() : "LOCAL");
 
         String token = jwtService.generateToken(extraClaims, user);
 
         return AuthResponse.builder()
+                .token(token)
                 .accessToken(token)
                 .tokenType("Bearer")
                 .expiresIn(jwtService.getExpirationMs())
-                .user(toUserInfo(user))
+                .user(toAuthUserDto(user))
+                .build();
+    }
+
+    private AuthUserDto toAuthUserDto(User user) {
+        return AuthUserDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .avatarUrl(user.getAvatarUrl())
+                .role(user.getRole())
+                .englishLevel(user.getEnglishLevel())
                 .build();
     }
 

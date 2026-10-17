@@ -3,6 +3,7 @@ package com.viecultures.backend.controller;
 import com.viecultures.backend.dto.*;
 import com.viecultures.backend.entity.OtpPurpose;
 import com.viecultures.backend.service.AuthService;
+import com.viecultures.backend.service.GoogleAuthService;
 import com.viecultures.backend.service.OtpService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleAuthService googleAuthService;
     private final OtpService otpService;
 
     // ─── Core Authentication & OAuth ───────────────────────────────────────────
@@ -46,22 +48,19 @@ public class AuthController {
         }
     }
 
-    @Operation(
-            summary = "Đăng nhập hoặc liên kết bằng Google OAuth (Web/Mobile)",
-            description = "Nhận Google ID Token hoặc thông tin profile từ Google Sign-In, tự động kích hoạt tài khoản Just-In-Time và trả về JWT Bearer token"
-    )
+    @Operation(summary = "Đăng nhập bằng Google ID Token")
     @PostMapping("/google")
     public ResponseEntity<ApiResponse<AuthResponse>> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
         try {
-            AuthResponse response = authService.loginWithGoogle(request);
-            return ResponseEntity.ok(ApiResponse.ok(response, "Đăng nhập Google thành công"));
+            AuthResponse response = googleAuthService.authenticateGoogle(request);
+            return ResponseEntity.ok(ApiResponse.success(response, "Đăng nhập Google thành công"));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(ex.getMessage(), "GOOGLE_AUTH_FAILED"));
+                    .body(ApiResponse.error(ex.getMessage()));
         } catch (Exception ex) {
             log.error("Google authentication error: {}", ex.getMessage(), ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Lỗi xác thực tài khoản Google: " + ex.getMessage(), "SERVER_ERROR"));
+                    .body(ApiResponse.error("Lỗi xác thực tài khoản Google: " + ex.getMessage()));
         }
     }
 

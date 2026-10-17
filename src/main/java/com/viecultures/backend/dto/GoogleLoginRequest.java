@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Yêu cầu đăng nhập hoặc liên kết bằng Google OAuth (Web/Mobile)")
 public class GoogleLoginRequest {
 
+    @NotBlank(message = "Google ID token không được để trống")
     @Schema(description = "Google ID Token (JWT do Google Sign-In cấp)")
     private String idToken;
 

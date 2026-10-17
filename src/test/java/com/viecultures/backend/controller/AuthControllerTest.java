@@ -3,6 +3,8 @@ package com.viecultures.backend.controller;
 import com.viecultures.backend.dto.*;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.service.AuthService;
+import com.viecultures.backend.service.GoogleAuthService;
+import com.viecultures.backend.service.OtpService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,12 @@ class AuthControllerTest {
     @Mock
     private AuthService authService;
 
+    @Mock
+    private GoogleAuthService googleAuthService;
+
+    @Mock
+    private OtpService otpService;
+
     @InjectMocks
     private AuthController authController;
 
@@ -41,7 +49,7 @@ class AuthControllerTest {
                 .accessToken("mock-jwt-token")
                 .tokenType("Bearer")
                 .expiresIn(604800000L)
-                .user(AuthResponse.UserInfo.builder()
+                .user(AuthUserDto.builder()
                         .email("test@viecultures.com")
                         .name("Test User")
                         .role("ROLE_USER")
@@ -87,18 +95,19 @@ class AuthControllerTest {
                 .build();
 
         AuthResponse mockResponse = AuthResponse.builder()
+                .token("mock-google-jwt-token")
                 .accessToken("mock-google-jwt-token")
                 .tokenType("Bearer")
                 .expiresIn(604800000L)
-                .user(AuthResponse.UserInfo.builder()
+                .user(AuthUserDto.builder()
                         .email("google.user@gmail.com")
                         .name("Google Learner")
                         .authProvider("GOOGLE")
-                        .role("ROLE_USER")
+                        .role("STUDENT")
                         .build())
                 .build();
 
-        when(authService.loginWithGoogle(any(GoogleLoginRequest.class))).thenReturn(mockResponse);
+        when(googleAuthService.authenticateGoogle(any(GoogleLoginRequest.class))).thenReturn(mockResponse);
 
         ResponseEntity<ApiResponse<AuthResponse>> response = authController.loginWithGoogle(request);
 
@@ -120,7 +129,7 @@ class AuthControllerTest {
 
         AuthResponse mockResponse = AuthResponse.builder()
                 .accessToken("mock-register-jwt-token")
-                .user(AuthResponse.UserInfo.builder()
+                .user(AuthUserDto.builder()
                         .email("new@viecultures.com")
                         .name("New Learner")
                         .build())
