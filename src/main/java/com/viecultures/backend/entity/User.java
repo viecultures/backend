@@ -33,6 +33,17 @@ public class User {
     @Column(name = "english_level")
     private CefrLevel englishLevel;
 
+    @Column(name = "password")
+    private String password;
+
+    @Builder.Default
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = false;
+
+    @Builder.Default
+    @Column(name = "role", nullable = false)
+    private String role = "STUDENT";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
