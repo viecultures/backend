@@ -15,5 +15,4 @@ class VieculturesBackendApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }

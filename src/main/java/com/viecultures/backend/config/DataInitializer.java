@@ -4,10 +4,13 @@ import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.repository.ReadingPostRepository;
 import com.viecultures.backend.service.ReadingPostService;
+import com.viecultures.backend.entity.User;
+import com.viecultures.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -18,9 +21,26 @@ public class DataInitializer implements CommandLineRunner {
 
     private final ReadingPostRepository readingPostRepository;
     private final ReadingPostService readingPostService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
+        // Khởi tạo tài khoản Admin mặc định nếu chưa tồn tại
+        if (!userRepository.existsByEmail("admin@viecultures.com")) {
+            User admin = User.builder()
+                    .email("admin@viecultures.com")
+                    .password(passwordEncoder.encode("123456"))
+                    .name("Quản Trị Viên (Admin)")
+                    .role("ROLE_ADMIN")
+                    .authProvider("LOCAL")
+                    .enabled(true)
+                    .emailVerified(true)
+                    .build();
+            userRepository.save(admin);
+            log.info("[DataInitializer] Đã khởi tạo tài khoản Admin mặc định: admin@viecultures.com / 123456");
+        }
+
         if (readingPostRepository.count() == 0) {
             log.info("[DataInitializer] Database chưa có bài đọc, tiến hành khởi tạo 2 bài đọc mẫu (Đông Hồ & Áo Dài)...");
 

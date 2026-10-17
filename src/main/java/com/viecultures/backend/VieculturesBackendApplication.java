@@ -80,10 +80,33 @@ public class VieculturesBackendApplication {
      * Phat hien du lieu thieu, rong hoac con dung placeholder mau chua cap nhat.
      */
     static void validateEnvironment(boolean envLoaded) {
+        // Kiem tra che do Deploy: neu DEPLOY=true, deploy=true, hoac dang chay tren cloud (vi du: Render)
+        String deployMode = getEnvOrProperty("DEPLOY");
+        if (deployMode == null || deployMode.isBlank()) {
+            deployMode = getEnvOrProperty("deploy");
+        }
+        boolean isDeploy = "true".equalsIgnoreCase(deployMode)
+                || "1".equals(deployMode)
+                || "yes".equalsIgnoreCase(deployMode)
+                || "true".equalsIgnoreCase(getEnvOrProperty("SKIP_ENV_CHECK"))
+                || "true".equalsIgnoreCase(getEnvOrProperty("SKIP_ENV_VALIDATION"))
+                || System.getenv("RENDER") != null;
+
+        if (isDeploy) {
+            System.out.println("[INFO] Che do Deploy / Cloud duoc kich hoat (DEPLOY=true hoac Render). Bo qua kiem tra file .env.");
+            return;
+        }
+
         List<String> errors = new ArrayList<>();
 
         if (!envLoaded) {
-            errors.add("Khong tim thay file .env tai thu muc goc hoac backend/.env!");
+            // Neu khong co file .env va khong co bien moi truong he thong quan trong
+            boolean hasEssentialEnv = getEnvOrProperty("DB_URL") != null
+                    && getEnvOrProperty("DB_USERNAME") != null
+                    && getEnvOrProperty("JWT_SECRET") != null;
+            if (!hasEssentialEnv) {
+                errors.add("Khong tim thay file .env tai thu muc goc hoac backend/.env!");
+            }
         }
 
         // 1. Kiem tra PORT
