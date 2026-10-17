@@ -11,4 +11,5 @@ import java.util.List;
 public interface UserVocabProgressRepository extends JpaRepository<UserVocabProgress, UserVocabProgress.UserVocabProgressId> {
     List<UserVocabProgress> findByUserIdAndStatus(String userId, VocabProgressStatus status);
     List<UserVocabProgress> findByUserId(String userId);
+    long countByUserId(String userId);
 }

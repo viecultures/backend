@@ -27,6 +27,7 @@ public class ReadingPostRequest {
     private Boolean featured;
     private List<ParagraphPairDto> paragraphs;
     private List<VocabItemDto> vocabularies;
+    private List<QuizQuestionDto> questions;
 
     @Data
     @Builder
@@ -53,5 +54,17 @@ public class ReadingPostRequest {
         private String audioUrl;
         private CefrLevel level;
         private String usageNote;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class QuizQuestionDto {
+        private Integer orderIndex;
+        private String question;
+        private String options;
+        private String correctKey;
+        private String explanation;
     }
 }

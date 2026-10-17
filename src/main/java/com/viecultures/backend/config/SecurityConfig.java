@@ -46,6 +46,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/posts/*/read").permitAll()
 
+                        // Vocabulary & Dictionary Lookups (Public on-demand lookup)
+                        .requestMatchers(HttpMethod.GET, "/api/vocabularies/**").permitAll()
+
                         // Audio & TTS Service
                         .requestMatchers("/api/tts/**").permitAll()
                         .requestMatchers("/api/voice/**").permitAll()
@@ -62,6 +65,9 @@ public class SecurityConfig {
                                 "/api-docs/**"
                         ).permitAll()
                         .requestMatchers("/error").permitAll()
+
+                        // Endpoints Quản trị viên (Admin Management & Metrics)
+                        .requestMatchers("/api/v1/admin/**", "/api/admin/**").hasRole("ADMIN")
 
                         // Các API còn lại (tạo bài viết, lưu tiến độ học, reflection cá nhân) yêu cầu đăng nhập
                         .anyRequest().authenticated()
