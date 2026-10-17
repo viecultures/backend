@@ -23,9 +23,4 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 }

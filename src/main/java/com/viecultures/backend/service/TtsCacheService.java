@@ -17,7 +17,7 @@ import java.util.Optional;
 @Service
 public class TtsCacheService {
 
-    @Value("${tts.cache.dir:audio-cache}")
+    @Value("${tts.cache.dir}")
     private String ttsCacheDir;
 
     /**

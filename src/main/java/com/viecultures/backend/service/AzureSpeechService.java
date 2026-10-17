@@ -18,10 +18,10 @@ public class AzureSpeechService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${azure.speech.key:}")
+    @Value("${azure.speech.key}")
     private String azureSpeechKey;
 
-    @Value("${azure.speech.region:southeastasia}")
+    @Value("${azure.speech.region}")
     private String azureSpeechRegion;
 
     public AzureSpeechService(RestTemplate restTemplate) {
@@ -30,13 +30,14 @@ public class AzureSpeechService {
 
     public boolean isConfigured() {
         return azureSpeechKey != null &&
-               !azureSpeechKey.trim().isEmpty() &&
-               !azureSpeechKey.equalsIgnoreCase("your_key_here") &&
-               !azureSpeechKey.equalsIgnoreCase("your_azure_speech_key_here");
+                !azureSpeechKey.trim().isEmpty() &&
+                !azureSpeechKey.equalsIgnoreCase("your_key_here") &&
+                !azureSpeechKey.equalsIgnoreCase("your_azure_speech_key_here");
     }
 
     /**
-     * Gọi trực tiếp Azure Speech REST API để chuyển đổi văn bản sang file âm thanh MP3
+     * Gọi trực tiếp Azure Speech REST API để chuyển đổi văn bản sang file âm thanh
+     * MP3
      */
     public byte[] synthesize(String text, String voice, String speed) {
         if (!isConfigured()) {
@@ -49,7 +50,8 @@ public class AzureSpeechService {
         String ssml = buildSsml(text, targetVoice, targetSpeed);
 
         String endpoint = String.format("https://%s.tts.speech.microsoft.com/cognitiveservices/v1",
-                (azureSpeechRegion != null && !azureSpeechRegion.trim().isEmpty()) ? azureSpeechRegion.trim() : "southeastasia");
+                (azureSpeechRegion != null && !azureSpeechRegion.trim().isEmpty()) ? azureSpeechRegion.trim()
+                        : "southeastasia");
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Ocp-Apim-Subscription-Key", azureSpeechKey.trim());
@@ -66,7 +68,8 @@ public class AzureSpeechService {
             ResponseEntity<byte[]> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, byte[].class);
             byte[] body = response.getBody();
             if (body == null || body.length == 0) {
-                throw new TtsException("AZURE_EMPTY_RESPONSE", 500, "Azure Speech API trả về phản hồi rỗng không chứa dữ liệu âm thanh");
+                throw new TtsException("AZURE_EMPTY_RESPONSE", 500,
+                        "Azure Speech API trả về phản hồi rỗng không chứa dữ liệu âm thanh");
             }
             log.info("Azure Speech API generated successfully: bytes={}", body.length);
             return body;
@@ -105,21 +108,21 @@ public class AzureSpeechService {
         String escapedText = escapeXml(text);
         return String.format(
                 "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>" +
-                "<voice name='%s'>" +
-                "<prosody rate='%s'>%s</prosody>" +
-                "</voice>" +
-                "</speak>",
-                voice, speed, escapedText
-        );
+                        "<voice name='%s'>" +
+                        "<prosody rate='%s'>%s</prosody>" +
+                        "</voice>" +
+                        "</speak>",
+                voice, speed, escapedText);
     }
 
     private String escapeXml(String input) {
-        if (input == null) return "";
+        if (input == null)
+            return "";
         return input.replace("&", "&amp;")
-                    .replace("<", "&lt;")
-                    .replace(">", "&gt;")
-                    .replace("\"", "&quot;")
-                    .replace("'", "&apos;");
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&apos;");
     }
 
     private String formatSpeed(String speed) {
@@ -131,7 +134,8 @@ public class AzureSpeechService {
     }
 
     /**
-     * Tự động ánh xạ tên giọng Gemini nếu client truyền voice Gemini sang Azure voice
+     * Tự động ánh xạ tên giọng Gemini nếu client truyền voice Gemini sang Azure
+     * voice
      */
     private String mapVoice(String voice) {
         if (voice.equalsIgnoreCase("Amanda") || voice.equalsIgnoreCase("en-US-AmandaMultilingualNeural")) {
@@ -140,7 +144,8 @@ public class AzureSpeechService {
         if (voice.equalsIgnoreCase("Dustin") || voice.equalsIgnoreCase("en-US-DustinMultilingualNeural")) {
             return "en-US-DustinMultilingualNeural";
         }
-        if (voice.equalsIgnoreCase("Puck") || voice.equalsIgnoreCase("Fenrir") || voice.equalsIgnoreCase("Charon") || voice.equalsIgnoreCase("Guy")) {
+        if (voice.equalsIgnoreCase("Puck") || voice.equalsIgnoreCase("Fenrir") || voice.equalsIgnoreCase("Charon")
+                || voice.equalsIgnoreCase("Guy")) {
             return "en-US-GuyNeural";
         }
         if (voice.equalsIgnoreCase("Aoede") || voice.equalsIgnoreCase("Kore") || voice.equalsIgnoreCase("Jenny")) {

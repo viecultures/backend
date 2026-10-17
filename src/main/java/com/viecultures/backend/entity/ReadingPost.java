@@ -94,4 +94,10 @@ public class ReadingPost {
     @Builder.Default
     @ToString.Exclude
     private List<UserReflection> reflections = new ArrayList<>();
+
+    @OneToMany(mappedBy = "readingPost", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex ASC")
+    @Builder.Default
+    @ToString.Exclude
+    private List<QuizQuestion> questions = new ArrayList<>();
 }

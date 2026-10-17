@@ -13,10 +13,10 @@ import java.util.Arrays;
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
-    @Value("${cors.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:3000,http://localhost:8080,https://viecultures.vercel.app}")
+    @Value("${cors.allowed-origins}")
     private String allowedOrigins;
 
-    @Value("${audio.output.dir:../frontend/public/audio}")
+    @Value("${audio.output.dir}")
     private String audioOutputDir;
 
     @Override

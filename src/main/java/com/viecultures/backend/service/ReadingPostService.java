@@ -6,6 +6,7 @@ import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.ParagraphPair;
+import com.viecultures.backend.entity.QuizQuestion;
 import com.viecultures.backend.entity.ReadingPost;
 import com.viecultures.backend.entity.VocabItem;
 import com.viecultures.backend.repository.ParagraphPairRepository;
@@ -126,6 +127,20 @@ public class ReadingPostService {
             }
         }
 
+        if (request.getQuestions() != null) {
+            for (ReadingPostRequest.QuizQuestionDto qDto : request.getQuestions()) {
+                QuizQuestion question = QuizQuestion.builder()
+                        .readingPost(post)
+                        .orderIndex(qDto.getOrderIndex() != null ? qDto.getOrderIndex() : 0)
+                        .question(qDto.getQuestion())
+                        .options(qDto.getOptions())
+                        .correctKey(qDto.getCorrectKey())
+                        .explanation(qDto.getExplanation())
+                        .build();
+                post.getQuestions().add(question);
+            }
+        }
+
         ReadingPost saved = readingPostRepository.save(post);
         return toResponse(saved, true);
     }
@@ -183,6 +198,21 @@ public class ReadingPostService {
                         .usageNote(vDto.getUsageNote())
                         .build();
                 post.getVocabularies().add(vocab);
+            }
+        }
+
+        if (request.getQuestions() != null) {
+            post.getQuestions().clear();
+            for (ReadingPostRequest.QuizQuestionDto qDto : request.getQuestions()) {
+                QuizQuestion question = QuizQuestion.builder()
+                        .readingPost(post)
+                        .orderIndex(qDto.getOrderIndex() != null ? qDto.getOrderIndex() : 0)
+                        .question(qDto.getQuestion())
+                        .options(qDto.getOptions())
+                        .correctKey(qDto.getCorrectKey())
+                        .explanation(qDto.getExplanation())
+                        .build();
+                post.getQuestions().add(question);
             }
         }
 
@@ -254,6 +284,19 @@ public class ReadingPostService {
                                 .audioUrl(v.getAudioUrl())
                                 .level(v.getLevel())
                                 .usageNote(v.getUsageNote())
+                                .build())
+                        .collect(Collectors.toList()));
+            }
+
+            if (post.getQuestions() != null) {
+                builder.questions(post.getQuestions().stream()
+                        .map(q -> ReadingPostResponse.QuizQuestionDto.builder()
+                                .id(q.getId())
+                                .orderIndex(q.getOrderIndex())
+                                .question(q.getQuestion())
+                                .options(q.getOptions())
+                                .correctKey(q.getCorrectKey())
+                                .explanation(q.getExplanation())
                                 .build())
                         .collect(Collectors.toList()));
             }

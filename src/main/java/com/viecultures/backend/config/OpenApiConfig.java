@@ -32,6 +32,13 @@ public class OpenApiConfig {
                                 .url("https://springdoc.org")))
                 .servers(List.of(
                         new Server().url("/").description("Current Server (Local / Render)")
-                ));
+                ))
+                .components(new io.swagger.v3.oas.models.Components()
+                        .addSecuritySchemes("bearerAuth", new io.swagger.v3.oas.models.security.SecurityScheme()
+                                .name("bearerAuth")
+                                .type(io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("Nhập chuỗi JWT Bearer token được cấp từ API /api/v1/auth/login hoặc /api/v1/auth/google")));
     }
 }

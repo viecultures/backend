@@ -32,6 +32,7 @@ public class ReadingPostResponse {
     private LocalDateTime createdAt;
     private List<ParagraphPairDto> paragraphs;
     private List<VocabItemDto> vocabularies;
+    private List<QuizQuestionDto> questions;
 
     @Data
     @Builder
@@ -60,5 +61,18 @@ public class ReadingPostResponse {
         private String audioUrl;
         private CefrLevel level;
         private String usageNote;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class QuizQuestionDto {
+        private String id;
+        private Integer orderIndex;
+        private String question;
+        private String options;
+        private String correctKey;
+        private String explanation;
     }
 }
