@@ -19,10 +19,10 @@ public class TtsManagerService {
     private final GeminiVoiceService geminiVoiceService;
     private final TtsCacheService ttsCacheService;
 
-    @Value("${tts.provider:azure}")
+    @Value("${tts.provider}")
     private String configuredProvider;
 
-    @Value("${tts.fallback.enabled:true}")
+    @Value("${tts.fallback.enabled}")
     private boolean fallbackEnabled;
 
     /**

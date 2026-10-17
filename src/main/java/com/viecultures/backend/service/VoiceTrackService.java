@@ -24,7 +24,7 @@ public class VoiceTrackService {
 
     private final TtsManagerService ttsManagerService;
 
-    @Value("${audio.output.dir:../frontend/public/audio}")
+    @Value("${audio.output.dir}")
     private String audioOutputDir;
 
     private static final List<VoiceModelDto> CURATED_VOICE_MODELS = List.of(

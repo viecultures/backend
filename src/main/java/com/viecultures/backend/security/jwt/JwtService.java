@@ -19,10 +19,10 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret:viecultures-super-secret-jwt-signing-key-32-chars-long!}")
+    @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration-ms:604800000}") // Default 7 days
+    @Value("${jwt.expiration-ms}")
     private long expirationMs;
 
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
