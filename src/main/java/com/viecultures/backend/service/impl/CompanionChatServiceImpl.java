@@ -37,10 +37,10 @@ public class CompanionChatServiceImpl implements CompanionChatService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${gemini.api.key}")
+    @Value("${gemini.chat.api.key}")
     private String geminiApiKey;
 
-    @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models}")
+    @Value("${gemini.chat.api.url:https://generativelanguage.googleapis.com/v1beta/models}")
     private String geminiApiUrl;
 
     // Primary and failover models for text chat
@@ -208,10 +208,12 @@ public class CompanionChatServiceImpl implements CompanionChatService {
                 ArrayNode userParts = userTurn.putArray("parts");
                 userParts.addObject().put("text", request.getMessage());
 
-                // Generation Config
+                // Generation Config - Optimizing for Gemini 3.8
                 ObjectNode genConfig = rootNode.putObject("generationConfig");
                 genConfig.put("temperature", 0.7);
-                genConfig.put("maxOutputTokens", 600);
+                genConfig.put("maxOutputTokens", 2048);
+                ObjectNode thinkingConfig = genConfig.putObject("thinkingConfig");
+                thinkingConfig.put("thinkingBudget", 0);
 
                 HttpEntity<String> entity = new HttpEntity<>(objectMapper.writeValueAsString(rootNode), headers);
                 ResponseEntity<String> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, String.class);
@@ -228,11 +230,10 @@ public class CompanionChatServiceImpl implements CompanionChatService {
                 }
             } catch (HttpStatusCodeException httpEx) {
                 log.warn("Gemini model [{}] failed with HTTP {}: {}", model, httpEx.getStatusCode(), httpEx.getResponseBodyAsString());
-                if (httpEx.getStatusCode().value() == 429 || httpEx.getStatusCode().value() == 404) {
-                    continue; // Try failover model
-                }
+                continue; // Try failover model
             } catch (Exception ex) {
                 log.error("Unexpected error invoking Gemini model [{}]: {}", model, ex.getMessage(), ex);
+                continue; // Try failover model
             }
         }
 

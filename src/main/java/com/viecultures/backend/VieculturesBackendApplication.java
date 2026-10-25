@@ -59,7 +59,7 @@ public class VieculturesBackendApplication {
                             if (val.startsWith("\"") && val.endsWith("\"") && val.length() >= 2) {
                                 val = val.substring(1, val.length() - 1);
                             }
-                            if (System.getProperty(key) == null && System.getenv(key) == null) {
+                            if (val != null && !val.isBlank()) {
                                 System.setProperty(key, val);
                             }
                         }
