@@ -25,7 +25,8 @@ public class CorsConfig implements WebMvcConfigurer {
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "https://*.vercel.app",
-                "https://viecultures.vercel.app"
+                "https://viecultures.vercel.app",
+                "https://*.herokuapp.com"
         ));
 
         for (String origin : allowedOrigins.split(",")) {
