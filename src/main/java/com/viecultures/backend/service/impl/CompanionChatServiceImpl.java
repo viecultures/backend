@@ -255,7 +255,7 @@ public class CompanionChatServiceImpl implements CompanionChatService {
                 + "[NATURAL CONVERSATION PRINCIPLES]\n"
                 + "1. Strictly English: Always respond in natural, friendly English.\n"
                 + "2. Be human and warm: Never use robotic AI filler or canned templates (e.g. 'I am delighted you are asking...', 'As an AI...', 'According to the database...', 'While our library is expanding...'). Jump right into the conversation with genuine warmth and enthusiasm.\n"
-                + "3. Avoid rigid formatting: Do not format responses with labeled blocks (e.g. '[Summary]:', '[Cultural Context]:') or heavy bullet lists unless specifically requested. Write smooth, vivid, well-paced paragraphs.\n"
+                + "3. Avoid rigid formatting: Do not format responses with labeled blocks (e.g. '[Summary]:', '[Cultural Context]:'), raw asterisk dividers like '***', or heavy bullet lists unless specifically requested. Write smooth, vivid, well-paced paragraphs.\n"
                 + "4. Natural storytelling: Seamlessly integrate cultural knowledge from [CULTURAL CONTEXT ARCHIVE] into your dialogue. If the topic is broader, share accurate, captivating cultural insights with curiosity.\n"
                 + "5. Length: Keep replies concise and easy to read (around 80-150 words).\n"
                 + "6. Conversation prompts: End your response with exactly 2 thoughtful follow-up questions to keep the chat going, formatted as:\n"
@@ -265,7 +265,7 @@ public class CompanionChatServiceImpl implements CompanionChatService {
     }
 
     private static final Pattern PROMPTS_DELIMITER_PATTERN = Pattern.compile(
-            "(?i)(?:\\r?\\n|^)\\s*(?:---|\\*\\*|###)?\\s*(?:PROMPTS?|SUGGESTED\\s+PROMPTS?|FOLLOW[- ]UP(?:\\s+QUESTIONS?)?)\\s*(?:---|\\*\\*|:)?\\s*(?:\\r?\\n|$)"
+            "(?i)(?:\\r?\\n|^)\\s*(?:[*\\-_]{3,}\\s*\\r?\\n\\s*)?(?:---|\\*\\*\\*|\\*\\*|###)?\\s*(?:PROMPTS?|SUGGESTED\\s+PROMPTS?|FOLLOW[- ]UP(?:\\s+QUESTIONS?)?)\\s*(?:---|\\*\\*\\*|\\*\\*|:)?\\s*(?:\\r?\\n|$)"
     );
 
     private ParsedCompanionOutput parseResponseAndPrompts(String raw) {
@@ -303,8 +303,14 @@ public class CompanionChatServiceImpl implements CompanionChatService {
             }
         }
 
-        // Clean any residual trailing markdown headers, dividers, or asterisks
+        // Remove standalone divider lines like ***, ---, ___ on their own line
+        reply = reply.replaceAll("(?m)^\\s*[*\\-_]{3,}\\s*$", "");
+
+        // Clean any residual trailing markdown headers, dividers, or asterisks (such as ***, ---, ###)
         reply = reply.replaceAll("(?s)[\\s*\\-_#]+$", "").trim();
+
+        // Collapse multiple blank lines
+        reply = reply.replaceAll("\\n{3,}", "\n\n").trim();
 
         if (prompts.isEmpty()) {
             prompts.add("What other traditions are connected to this?");
