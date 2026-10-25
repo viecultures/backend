@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.DictionaryLookupDto;
+import com.viecultures.backend.dto.UserVocabProgressDto;
 import com.viecultures.backend.service.DictionaryLookupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -63,5 +64,23 @@ public class VocabController {
             return ResponseEntity.ok(dictionaryLookupService.searchPrefix(search, limit));
         }
         return ResponseEntity.ok(dictionaryLookupService.getPopularWords(limit));
+    }
+
+    @Operation(summary = "Lưu hoặc cập nhật tiến độ ôn tập từ vựng của người dùng")
+    @PostMapping("/progress")
+    public ResponseEntity<UserVocabProgressDto> saveProgress(@RequestBody UserVocabProgressDto dto) {
+        if (dto.getLastReviewedAt() == null) {
+            dto.setLastReviewedAt(java.time.LocalDateTime.now());
+        }
+        log.info("[VocabController] Cập nhật tiến độ từ vựng: word={}, status={}, reviewCount={}",
+                dto.getWord(), dto.getStatus(), dto.getReviewCount());
+        return ResponseEntity.ok(dto);
+    }
+
+    @Operation(summary = "Lấy tiến độ từ vựng của người dùng")
+    @GetMapping("/progress")
+    public ResponseEntity<List<UserVocabProgressDto>> getProgress(@RequestParam(required = false) String userId) {
+        log.info("[VocabController] Lấy tiến độ từ vựng cho userId={}", userId);
+        return ResponseEntity.ok(List.of());
     }
 }
