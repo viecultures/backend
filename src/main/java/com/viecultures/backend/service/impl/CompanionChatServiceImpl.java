@@ -27,6 +27,8 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -130,7 +132,7 @@ public class CompanionChatServiceImpl implements CompanionChatService {
         }
 
         // Mode C: Fallback (No direct article match found)
-        return "No specific lesson matched in the repository. Provide a general cultural explanation and gracefully suggest related cultural themes.";
+        return "No specific article matched in the library. Share authentic, vivid cultural insights naturally from general knowledge.";
     }
 
     private void appendPostToContext(StringBuilder sb, ReadingPost post) {
@@ -239,52 +241,74 @@ public class CompanionChatServiceImpl implements CompanionChatService {
 
         // Graceful fallback when all Gemini endpoints fail
         log.warn("All Gemini chat models failed. Triggering offline fallback response.");
-        return "I am delighted you are asking about Vietnamese cultural traditions! "
-                + "Our real-time cultural companion is currently experiencing high demand. "
-                + "PROMPTS:\n- What traditional dish or heritage site would you like to explore next?\n- How do you celebrate traditional festivals in your hometown?";
+        return "Hey there! I am having a brief connection hiccup retrieving cultural archives right now. While I reconnect, what traditional dish or custom would you love to explore together?\n"
+                + "PROMPTS:\n"
+                + "- Tell me what makes Hanoi Pho so special.\n"
+                + "- What are the most meaningful customs of Vietnamese Tet?";
     }
 
     private String buildSystemPrompt(String groundedContext) {
-        return "You are VieCultures Cultural Learning Companion, a warm, culturally knowledgeable, and encouraging language partner.\n"
-                + "Your mission is to help learners explore Vietnamese culture (traditions, food, heritage) while practicing English comfortably.\n\n"
-                + "[CONTEXT DATA FROM DATABASE]\n"
+        return "You are VieCultures Cultural Companion, an authentic, warm, and engaging conversational partner passionate about Vietnamese culture, heritage, folklore, traditions, and cuisine.\n\n"
+                + "Your mission: Converse with users in natural, fluid, and encouraging English (accessible for CEFR A2-B2 learners). Speak like a knowledgeable local friend sharing a story over coffee, not an encyclopedia or formal assistant.\n\n"
+                + "[CULTURAL CONTEXT ARCHIVE]\n"
                 + groundedContext + "\n\n"
-                + "[CONSTRAINTS]\n"
-                + "1. Answer in natural, friendly English suitable for CEFR A2-B2 learners. If the user asks in Vietnamese, provide a bilingual response or clear natural English explanation.\n"
-                + "2. Ground facts in [CONTEXT DATA FROM DATABASE]. If the topic is not covered in the database, provide a concise cultural overview, gracefully acknowledge our library is expanding, and keep the tone encouraging.\n"
-                + "3. Keep responses under 150 words.\n"
-                + "4. At the very end of your response, ALWAYS output exactly 2 suggested follow-up prompts formatted as:\n"
+                + "[NATURAL CONVERSATION PRINCIPLES]\n"
+                + "1. Strictly English: Always respond in natural, friendly English.\n"
+                + "2. Be human and warm: Never use robotic AI filler or canned templates (e.g. 'I am delighted you are asking...', 'As an AI...', 'According to the database...', 'While our library is expanding...'). Jump right into the conversation with genuine warmth and enthusiasm.\n"
+                + "3. Avoid rigid formatting: Do not format responses with labeled blocks (e.g. '[Summary]:', '[Cultural Context]:') or heavy bullet lists unless specifically requested. Write smooth, vivid, well-paced paragraphs.\n"
+                + "4. Natural storytelling: Seamlessly integrate cultural knowledge from [CULTURAL CONTEXT ARCHIVE] into your dialogue. If the topic is broader, share accurate, captivating cultural insights with curiosity.\n"
+                + "5. Length: Keep replies concise and easy to read (around 80-150 words).\n"
+                + "6. Conversation prompts: End your response with exactly 2 thoughtful follow-up questions to keep the chat going, formatted as:\n"
                 + "PROMPTS:\n"
                 + "- <Question 1>\n"
                 + "- <Question 2>";
     }
 
+    private static final Pattern PROMPTS_DELIMITER_PATTERN = Pattern.compile(
+            "(?i)(?:\\r?\\n|^)\\s*(?:---|\\*\\*|###)?\\s*(?:PROMPTS?|SUGGESTED\\s+PROMPTS?|FOLLOW[- ]UP(?:\\s+QUESTIONS?)?)\\s*(?:---|\\*\\*|:)?\\s*(?:\\r?\\n|$)"
+    );
+
     private ParsedCompanionOutput parseResponseAndPrompts(String raw) {
         if (raw == null || raw.isBlank()) {
             return new ParsedCompanionOutput(
-                    "Hello! I am your VieCultures Companion. How can I help you explore Vietnamese culture today?",
-                    List.of("Tell me about Pho Hanoi.", "What is unique about Hoi An Ancient Town?")
+                    "Hello! I am your VieCultures Companion. What Vietnamese tradition, dish, or cultural story would you like to explore today?",
+                    List.of("What makes traditional Pho broth authentic?", "Tell me about Mid-Autumn festival traditions.")
             );
         }
 
         String reply = raw;
         List<String> prompts = new ArrayList<>();
 
-        int promptsIdx = raw.indexOf("PROMPTS:");
-        if (promptsIdx != -1) {
-            reply = raw.substring(0, promptsIdx).trim();
-            String promptsBlock = raw.substring(promptsIdx + "PROMPTS:".length()).trim();
-            for (String line : promptsBlock.split("\n")) {
-                String cleaned = line.replaceAll("^[-*0-9.]\\s*", "").trim();
+        Matcher matcher = PROMPTS_DELIMITER_PATTERN.matcher(raw);
+        if (matcher.find()) {
+            reply = raw.substring(0, matcher.start()).trim();
+            String promptsBlock = raw.substring(matcher.end()).trim();
+            for (String line : promptsBlock.split("\\r?\\n")) {
+                String cleaned = line.replaceAll("^[\\-*•0-9.)\\]\\s]+", "").replaceAll("[*#_]+$", "").trim();
                 if (!cleaned.isBlank()) {
                     prompts.add(cleaned);
                 }
             }
+        } else {
+            int idx = raw.toUpperCase().lastIndexOf("PROMPTS:");
+            if (idx != -1) {
+                reply = raw.substring(0, idx).trim();
+                String promptsBlock = raw.substring(idx + "PROMPTS:".length()).trim();
+                for (String line : promptsBlock.split("\\r?\\n")) {
+                    String cleaned = line.replaceAll("^[\\-*•0-9.)\\]\\s]+", "").replaceAll("[*#_]+$", "").trim();
+                    if (!cleaned.isBlank()) {
+                        prompts.add(cleaned);
+                    }
+                }
+            }
         }
 
+        // Clean any residual trailing markdown headers, dividers, or asterisks
+        reply = reply.replaceAll("(?s)[\\s*\\-_#]+$", "").trim();
+
         if (prompts.isEmpty()) {
-            prompts.add("Have you tried this tradition before?");
-            prompts.add("What would you like to learn about next?");
+            prompts.add("What other traditions are connected to this?");
+            prompts.add("Can you tell me about the regional flavors?");
         }
 
         return new ParsedCompanionOutput(reply, prompts);
