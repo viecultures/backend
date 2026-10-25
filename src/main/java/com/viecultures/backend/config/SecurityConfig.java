@@ -55,6 +55,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/voice/**").permitAll()
                         .requestMatchers("/audio/**").permitAll()
 
+                        // AI Companion Chat Service (Public with internal rate-limiting)
+                        .requestMatchers("/api/v1/companion/**").permitAll()
+
                         // System Health
                         .requestMatchers("/api/health/**").permitAll()
 
