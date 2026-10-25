@@ -47,8 +47,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/posts/*/read").permitAll()
 
-                        // Vocabulary & Dictionary Lookups (Public on-demand lookup)
+                        // Vocabulary & Dictionary Lookups & Progress Persistence
                         .requestMatchers(HttpMethod.GET, "/api/vocabularies/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/vocabularies/progress").permitAll()
+                        .requestMatchers("/api/user_vocab_progress/**").permitAll()
 
                         // Audio & TTS Service
                         .requestMatchers("/api/tts/**").permitAll()
