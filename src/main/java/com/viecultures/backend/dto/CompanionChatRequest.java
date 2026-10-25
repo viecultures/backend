@@ -25,6 +25,10 @@ public class CompanionChatRequest {
     private String message;
 
     @Builder.Default
+    @Schema(description = "Language mode for response: 'en', 'vi', or 'bilingual'. Defaults to 'en'", example = "en")
+    private String language = "en";
+
+    @Builder.Default
     @Schema(description = "Previous dialogue turns in chronological order")
     private List<CompanionChatMessage> history = new ArrayList<>();
 }
