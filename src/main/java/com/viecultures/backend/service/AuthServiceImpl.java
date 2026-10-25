@@ -5,6 +5,8 @@ import com.viecultures.backend.dto.AuthResponse;
 import com.viecultures.backend.dto.AuthUserDto;
 import com.viecultures.backend.dto.GoogleLoginRequest;
 import com.viecultures.backend.dto.RegisterRequest;
+import com.viecultures.backend.dto.SendOtpRequest;
+import com.viecultures.backend.entity.OtpPurpose;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.User;
 import com.viecultures.backend.repository.UserRepository;
@@ -37,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final RestTemplate restTemplate;
+    private final OtpService otpService;
 
     private static final String GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token=";
 
@@ -80,10 +83,20 @@ public class AuthServiceImpl implements AuthService {
                 .role("ROLE_USER")
                 .authProvider("LOCAL")
                 .enabled(true)
+                .emailVerified(false)
                 .englishLevel(request.getEnglishLevel() != null ? request.getEnglishLevel() : CefrLevel.B1)
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        try {
+            SendOtpRequest otpRequest = new SendOtpRequest();
+            otpRequest.setEmail(email);
+            otpRequest.setPurpose(OtpPurpose.VERIFY_EMAIL);
+            otpService.sendOtp(otpRequest);
+        } catch (Exception ex) {
+            log.error("Failed to automatically send registration OTP to {}: {}", email, ex.getMessage());
+        }
         return buildAuthResponse(savedUser);
     }
 
@@ -179,6 +192,7 @@ public class AuthServiceImpl implements AuthService {
                     .authProvider("GOOGLE")
                     .role("ROLE_USER")
                     .enabled(true)
+                    .emailVerified(true)
                     .englishLevel(CefrLevel.B1)
                     .password(passwordEncoder.encode(UUID.randomUUID().toString()))
                     .build();
