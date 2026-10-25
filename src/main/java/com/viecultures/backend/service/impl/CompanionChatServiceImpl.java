@@ -58,7 +58,7 @@ public class CompanionChatServiceImpl implements CompanionChatService {
             "gemini-flash-latest"
     );
 
-    private static final int FREE_TIER_DAILY_LIMIT = 3;
+    private static final int FREE_TIER_DAILY_LIMIT = 5;
     private final ConcurrentHashMap<String, AtomicInteger> dailyUsageMap = new ConcurrentHashMap<>();
 
     @Override
@@ -207,12 +207,23 @@ public class CompanionChatServiceImpl implements CompanionChatService {
             log.warn("Rate limit exceeded for client: {}. Daily limit: {}", clientIdentifier, FREE_TIER_DAILY_LIMIT);
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
-                    "LIMIT_EXCEEDED: You have used all 3 daily free companion chat turns. Please upgrade to Pro for unlimited access."
+                    "LIMIT_EXCEEDED: You have used all 5 daily free companion chat turns. Please upgrade to Pro for unlimited access."
             );
         }
 
         int updatedCount = currentCount.incrementAndGet();
         return Math.max(0, FREE_TIER_DAILY_LIMIT - updatedCount);
+    }
+
+    @Override
+    public int getRemainingTurns(String clientIdentifier, boolean isPro) {
+        if (isPro) {
+            return -1;
+        }
+        String usageKey = clientIdentifier + "_" + LocalDate.now();
+        AtomicInteger currentCount = dailyUsageMap.get(usageKey);
+        int usedCount = (currentCount != null) ? currentCount.get() : 0;
+        return Math.max(0, FREE_TIER_DAILY_LIMIT - usedCount);
     }
 
     private String retrieveContext(CompanionChatRequest request, List<ReferencedLessonDto> referencedLessons) {

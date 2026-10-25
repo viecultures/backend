@@ -6,10 +6,10 @@ import com.viecultures.backend.dto.*;
 import com.viecultures.backend.service.CompanionChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -31,18 +31,39 @@ public class CompanionChatController {
     @PostMapping("/chat")
     @Operation(
             summary = "Send chat message to Cultural Companion",
-            description = "Processes conversational query grounded in lesson context or global article search. Free tier limited to 3 turns/day."
+            description = "Processes conversational query grounded in lesson context or global article search. Free tier limited to 5 turns/day."
     )
     public ResponseEntity<ApiResponse<CompanionChatResponse>> chat(
             @Valid @RequestBody CompanionChatRequest request,
-            Authentication authentication,
-            HttpServletRequest servletRequest
+            Authentication authentication
     ) {
-        String clientIdentifier = resolveClientIdentifier(authentication, servletRequest, null);
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("AUTH_REQUIRED", "Please log in to chat with the Cultural Companion"));
+        }
+        String clientIdentifier = authentication.getName();
         boolean isPro = checkProStatus(authentication);
 
         CompanionChatResponse response = companionChatService.chat(request, clientIdentifier, isPro);
         return ResponseEntity.ok(ApiResponse.ok(response, "Companion response generated successfully"));
+    }
+
+    @GetMapping("/quota")
+    @Operation(summary = "Get companion chat quota for current authenticated user")
+    public ResponseEntity<ApiResponse<CompanionQuotaResponse>> getQuota(
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("AUTH_REQUIRED", "Please log in to view quota"));
+        }
+        String clientIdentifier = authentication.getName();
+        boolean isPro = checkProStatus(authentication);
+        int remaining = companionChatService.getRemainingTurns(clientIdentifier, isPro);
+        return ResponseEntity.ok(ApiResponse.ok(
+                new CompanionQuotaResponse(5, remaining, isPro),
+                "Quota retrieved successfully"
+        ));
     }
 
     @PostMapping("/translate")
@@ -64,15 +85,17 @@ public class CompanionChatController {
     @GetMapping("/history")
     @Operation(
             summary = "Get companion chat history",
-            description = "Retrieves stored conversation turns for current user/client, optionally filtered by lessonId"
+            description = "Retrieves stored conversation turns for current user, optionally filtered by lessonId"
     )
     public ResponseEntity<ApiResponse<List<CompanionChatMessage>>> getHistory(
             @RequestParam(value = "lessonId", required = false) String lessonId,
-            @RequestParam(value = "clientIdentifier", required = false) String clientIdentifierParam,
-            Authentication authentication,
-            HttpServletRequest servletRequest
+            Authentication authentication
     ) {
-        String clientIdentifier = resolveClientIdentifier(authentication, servletRequest, clientIdentifierParam);
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("AUTH_REQUIRED", "Please log in to chat with the Cultural Companion"));
+        }
+        String clientIdentifier = authentication.getName();
         List<CompanionChatMessage> history = companionChatService.getChatHistory(clientIdentifier, lessonId);
         return ResponseEntity.ok(ApiResponse.ok(history, "Companion chat history retrieved successfully"));
     }
@@ -80,16 +103,18 @@ public class CompanionChatController {
     @PostMapping("/history")
     @Operation(
             summary = "Save companion chat history",
-            description = "Persists one or more chat messages associated with the client and optional lesson"
+            description = "Persists one or more chat messages associated with the user and optional lesson"
     )
     public ResponseEntity<ApiResponse<List<CompanionChatMessage>>> saveHistory(
             @RequestBody JsonNode requestNode,
             @RequestParam(value = "lessonId", required = false) String lessonIdParam,
-            @RequestParam(value = "clientIdentifier", required = false) String clientIdentifierParam,
-            Authentication authentication,
-            HttpServletRequest servletRequest
+            Authentication authentication
     ) {
-        String clientIdentifier = resolveClientIdentifier(authentication, servletRequest, clientIdentifierParam);
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("AUTH_REQUIRED", "Please log in to chat with the Cultural Companion"));
+        }
+        String clientIdentifier = authentication.getName();
         String lessonId = lessonIdParam;
         List<CompanionChatMessage> messages = new ArrayList<>();
 
@@ -101,9 +126,6 @@ public class CompanionChatController {
             } else if (requestNode.isObject()) {
                 if (requestNode.has("lessonId") && !requestNode.get("lessonId").isNull()) {
                     lessonId = requestNode.get("lessonId").asText();
-                }
-                if (requestNode.has("clientIdentifier") && !requestNode.get("clientIdentifier").isNull() && (clientIdentifierParam == null || clientIdentifierParam.isBlank())) {
-                    clientIdentifier = requestNode.get("clientIdentifier").asText();
                 }
 
                 if (requestNode.has("messages") && requestNode.get("messages").isArray()) {
@@ -126,31 +148,19 @@ public class CompanionChatController {
     @DeleteMapping("/history")
     @Operation(
             summary = "Clear companion chat history",
-            description = "Deletes chat history for current user/client, optionally filtered by lessonId"
+            description = "Deletes chat history for current user, optionally filtered by lessonId"
     )
     public ResponseEntity<ApiResponse<Void>> deleteHistory(
             @RequestParam(value = "lessonId", required = false) String lessonId,
-            @RequestParam(value = "clientIdentifier", required = false) String clientIdentifierParam,
-            Authentication authentication,
-            HttpServletRequest servletRequest
+            Authentication authentication
     ) {
-        String clientIdentifier = resolveClientIdentifier(authentication, servletRequest, clientIdentifierParam);
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("AUTH_REQUIRED", "Please log in to chat with the Cultural Companion"));
+        }
+        String clientIdentifier = authentication.getName();
         companionChatService.clearChatHistory(clientIdentifier, lessonId);
         return ResponseEntity.ok(ApiResponse.ok(null, "Companion chat history cleared successfully"));
-    }
-
-    private String resolveClientIdentifier(Authentication authentication, HttpServletRequest servletRequest, String overrideIdentifier) {
-        if (overrideIdentifier != null && !overrideIdentifier.isBlank()) {
-            return overrideIdentifier.trim();
-        }
-        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
-            return authentication.getName();
-        }
-        String forwardedFor = servletRequest.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
-        return servletRequest.getRemoteAddr();
     }
 
     private boolean checkProStatus(Authentication authentication) {

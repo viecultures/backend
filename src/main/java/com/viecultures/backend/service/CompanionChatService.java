@@ -54,4 +54,13 @@ public interface CompanionChatService {
      * @param lessonId         Optional lesson ID
      */
     void clearChatHistory(String clientIdentifier, String lessonId);
+
+    /**
+     * Calculates remaining turns for today for the user.
+     *
+     * @param clientIdentifier Authenticated user identifier
+     * @param isPro            Pro status flag
+     * @return remaining turns count or -1 if unlimited
+     */
+    int getRemainingTurns(String clientIdentifier, boolean isPro);
 }
