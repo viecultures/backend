@@ -10,5 +10,7 @@ import java.util.List;
 @Repository
 public interface UserReflectionRepository extends JpaRepository<UserReflection, String> {
     List<UserReflection> findByReadingPostIdAndStatus(String postId, ReflectionStatus status);
+    List<UserReflection> findByReadingPostIdAndStatusOrderByCreatedAtDesc(String postId, ReflectionStatus status);
+    List<UserReflection> findByReadingPostIdOrderByCreatedAtDesc(String postId);
     List<UserReflection> findByUserId(String userId);
 }

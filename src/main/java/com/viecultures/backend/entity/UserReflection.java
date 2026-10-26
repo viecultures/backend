@@ -46,6 +46,10 @@ public class UserReflection {
     @Builder.Default
     private Integer reactionsCount = 0;
 
+    @Column(name = "reports_count")
+    @Builder.Default
+    private Integer reportsCount = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
