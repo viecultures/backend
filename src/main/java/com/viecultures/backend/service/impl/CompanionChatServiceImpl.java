@@ -162,6 +162,13 @@ public class CompanionChatServiceImpl implements CompanionChatService {
             return Collections.emptyList();
         }
 
+        // Replace previous conversation state to prevent duplicates upon reload
+        if (effectiveLessonId != null) {
+            companionChatMessageRepository.deleteByClientIdentifierAndLessonId(clientIdentifier.trim(), effectiveLessonId);
+        } else {
+            companionChatMessageRepository.deleteByClientIdentifier(clientIdentifier.trim());
+        }
+
         List<CompanionChatMessageEntity> saved = companionChatMessageRepository.saveAll(entitiesToSave);
         return saved.stream().map(this::toDto).toList();
     }
