@@ -50,6 +50,10 @@ public class GeminiVoiceService {
         this.objectMapper = objectMapper;
     }
 
+    public String getGeminiApiKey() {
+        return geminiApiKey;
+    }
+
     /**
      * Hàm sinh file voice cho bài viết mới trực tiếp từ Google Gemini API
      * 

@@ -1,6 +1,8 @@
 package com.viecultures.backend.controller;
 
+import com.viecultures.backend.dto.ApiResponse;
 import com.viecultures.backend.dto.GenerateVoiceTrackRequest;
+import com.viecultures.backend.dto.LiveSessionResponse;
 import com.viecultures.backend.dto.VoiceGenerateRequest;
 import com.viecultures.backend.dto.VoiceGenerateResponse;
 import com.viecultures.backend.dto.VoiceModelDto;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -21,13 +24,34 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/voice")
+@RequestMapping({"/api/voice", "/api/v1/voice"})
 @RequiredArgsConstructor
 @Tag(name = "2. Neural Voice & TTS Models", description = "Dịch vụ chuyển văn bản thành giọng nói đa tốc độ và danh sách model AI Voice")
 public class VoiceController {
 
     private final GeminiVoiceService geminiVoiceService;
     private final VoiceTrackService voiceTrackService;
+
+    @Operation(summary = "Lấy Live Session Token/Key cho AI Voice Chat", description = "Cung cấp key từ hệ thống cho người dùng đã đăng nhập để bắt đầu phiên voice chat")
+    @GetMapping("/live-session")
+    public ResponseEntity<ApiResponse<LiveSessionResponse>> getLiveSession(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để sử dụng tính năng Voice Chat", "AUTH_REQUIRED"));
+        }
+        String apiKey = geminiVoiceService.getGeminiApiKey();
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(ApiResponse.error("Dịch vụ AI Voice chưa được cấu hình key", "CONFIG_MISSING"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(
+                LiveSessionResponse.builder()
+                        .apiKey(apiKey)
+                        .model("gemini-3.1-flash-live-preview")
+                        .build(),
+                "Khởi tạo phiên live thành công"
+        ));
+    }
 
     @Operation(summary = "Lấy danh sách các model giọng đọc Azure & AI chọn lọc", description = "Trả về danh sách các model (Amanda, Dustin, Jenny, Guy, Sonia, v.v.) để Admin chọn khi tạo bài viết")
     @GetMapping("/models")

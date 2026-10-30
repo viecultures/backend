@@ -54,7 +54,7 @@ public class SecurityConfig {
 
                         // Audio & TTS Service
                         .requestMatchers("/api/tts/**").permitAll()
-                        .requestMatchers("/api/voice/**").permitAll()
+                        .requestMatchers("/api/voice/**", "/api/v1/voice/**").permitAll()
                         .requestMatchers("/audio/**").permitAll()
 
                         // AI Companion Chat Service (Public with internal rate-limiting)
