@@ -61,6 +61,9 @@ public class SecurityConfig {
                         // AI Companion Chat Service (Public with internal rate-limiting)
                         .requestMatchers("/api/v1/companion/**").permitAll()
 
+                        // Telemetry & User Activity Ingest (Public)
+                        .requestMatchers(HttpMethod.POST, "/api/analytics/events/**", "/api/v1/analytics/events/**").permitAll()
+
                         // System Health
                         .requestMatchers("/api/health/**").permitAll()
 
