@@ -9,6 +9,7 @@ import com.viecultures.backend.entity.ParagraphPair;
 import com.viecultures.backend.entity.QuizQuestion;
 import com.viecultures.backend.entity.ReadingPost;
 import com.viecultures.backend.entity.VocabItem;
+import com.viecultures.backend.repository.LearningJourneyRepository;
 import com.viecultures.backend.repository.ParagraphPairRepository;
 import com.viecultures.backend.repository.ReadingPostRepository;
 import com.viecultures.backend.repository.VocabItemRepository;
@@ -28,11 +29,17 @@ import java.util.stream.Collectors;
 public class ReadingPostService {
 
     private final ReadingPostRepository readingPostRepository;
+    private final LearningJourneyRepository journeyRepository;
     private final ParagraphPairRepository paragraphPairRepository;
     private final VocabItemRepository vocabItemRepository;
 
     @Transactional(readOnly = true)
     public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query, String region, String topicGroup) {
+        return getPosts(topic, level, query, region, topicGroup, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query, String region, String topicGroup, Boolean standalone, String journeyId, String provinceId) {
         Specification<ReadingPost> spec = (root, q, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -44,12 +51,24 @@ public class ReadingPostService {
                 predicates.add(cb.equal(cb.lower(root.get("region")), region.toLowerCase().trim()));
             }
 
+            if (provinceId != null && !provinceId.isBlank()) {
+                predicates.add(cb.equal(cb.lower(root.get("provinceId")), provinceId.toLowerCase().trim()));
+            }
+
             if (topicGroup != null && !topicGroup.isBlank()) {
                 predicates.add(cb.equal(cb.lower(root.get("topicGroup")), topicGroup.toLowerCase().trim()));
             }
 
             if (level != null) {
                 predicates.add(cb.equal(root.get("level"), level));
+            }
+
+            if (Boolean.TRUE.equals(standalone)) {
+                predicates.add(cb.isNull(root.get("journey")));
+            }
+
+            if (journeyId != null && !journeyId.isBlank()) {
+                predicates.add(cb.equal(root.get("journey").get("id"), journeyId.trim()));
             }
 
             if (query != null && !query.isBlank()) {
@@ -84,6 +103,8 @@ public class ReadingPostService {
                 .titleVi(request.getTitleVi())
                 .topic(request.getTopic())
                 .region(request.getRegion())
+                .provinceId(request.getProvinceId())
+                .chapterOrder(request.getChapterOrder())
                 .imageUrl(request.getImageUrl())
                 .wordCount(request.getWordCount())
                 .summary(request.getSummary())
@@ -95,6 +116,10 @@ public class ReadingPostService {
                 .readTime(request.getReadTime())
                 .featured(Boolean.TRUE.equals(request.getFeatured()))
                 .build();
+
+        if (request.getJourneyId() != null && !request.getJourneyId().isBlank()) {
+            journeyRepository.findById(request.getJourneyId()).ifPresent(post::setJourney);
+        }
 
         if (request.getParagraphs() != null) {
             for (ReadingPostRequest.ParagraphPairDto pDto : request.getParagraphs()) {
@@ -155,6 +180,10 @@ public class ReadingPostService {
         post.setTitleVi(request.getTitleVi());
         post.setTopic(request.getTopic());
         post.setRegion(request.getRegion());
+        if (request.getProvinceId() != null) {
+            post.setProvinceId(request.getProvinceId());
+        }
+        post.setChapterOrder(request.getChapterOrder());
         post.setImageUrl(request.getImageUrl());
         post.setWordCount(request.getWordCount());
         post.setSummary(request.getSummary());
@@ -166,6 +195,13 @@ public class ReadingPostService {
         post.setReadTime(request.getReadTime());
         if (request.getFeatured() != null) {
             post.setFeatured(request.getFeatured());
+        }
+
+        if (request.getJourneyId() != null && !request.getJourneyId().isBlank()) {
+            journeyRepository.findById(request.getJourneyId()).ifPresent(post::setJourney);
+        } else if (request.getJourneyId() != null && request.getJourneyId().isBlank()) {
+            post.setJourney(null);
+            post.setChapterOrder(null);
         }
 
         if (request.getParagraphs() != null) {
@@ -244,6 +280,8 @@ public class ReadingPostService {
                 .titleVi(post.getTitleVi())
                 .topic(post.getTopic())
                 .region(post.getRegion())
+                .provinceId(post.getProvinceId())
+                .chapterOrder(post.getChapterOrder())
                 .imageUrl(post.getImageUrl())
                 .wordCount(post.getWordCount())
                 .summary(post.getSummary())
@@ -257,6 +295,11 @@ public class ReadingPostService {
                 .likesCount(post.getLikesCount())
                 .featured(Boolean.TRUE.equals(post.getFeatured()))
                 .createdAt(post.getCreatedAt());
+
+        if (post.getJourney() != null) {
+            builder.journeyId(post.getJourney().getId());
+            builder.journeyTitleEn(post.getJourney().getTitleEn());
+        }
 
         if (includeDetails) {
             if (post.getParagraphs() != null) {
@@ -318,65 +361,63 @@ public class ReadingPostService {
             groups.computeIfAbsent(key, k -> new ArrayList<>()).add(post);
         }
 
-        // 2. Compute topicCounts map across all unique grouped lessons
-        Map<String, Long> topicCounts = new LinkedHashMap<>();
-        topicCounts.put("All", (long) groups.size());
-        topicCounts.put("Heritage", 0L);
-        topicCounts.put("Cuisine", 0L);
-        topicCounts.put("Crafts", 0L);
-        topicCounts.put("Nature", 0L);
-        topicCounts.put("Folklore", 0L);
-
+        // 2. Build CatalogLessonDto for each group
         List<CatalogLessonDto> lessonList = new ArrayList<>();
+        Map<String, Long> topicCounts = new HashMap<>();
 
-        for (List<ReadingPost> groupPosts : groups.values()) {
-            ReadingPost primary = groupPosts.stream()
+        for (Map.Entry<String, List<ReadingPost>> entry : groups.entrySet()) {
+            List<ReadingPost> postGroup = entry.getValue();
+            if (postGroup.isEmpty()) continue;
+
+            // Pick representative post (prefer Level 2/B1/B2, else first)
+            ReadingPost primary = postGroup.stream()
                     .filter(p -> p.getLevel() == CefrLevel.B1 || p.getLevel() == CefrLevel.B2)
                     .findFirst()
-                    .orElse(groupPosts.get(0));
+                    .orElse(postGroup.get(0));
 
             String category = normalizeCategory(primary.getTopic());
             topicCounts.put(category, topicCounts.getOrDefault(category, 0L) + 1L);
 
             List<String> availableLevels = new ArrayList<>();
-            Map<String, CatalogLessonDto.LevelDetailDto> levelDetails = new LinkedHashMap<>();
+            Map<String, CatalogLessonDto.LevelDetailDto> levelDetails = new HashMap<>();
+            Map<String, String> postIds = new HashMap<>();
 
-            for (ReadingPost p : groupPosts) {
+            int maxVocabCount = 0;
+            int totalReads = 0;
+            int totalLikes = 0;
+            boolean isFeatured = false;
+
+            for (ReadingPost p : postGroup) {
                 String levelType = mapCefrToLevelType(p.getLevel());
                 if (!availableLevels.contains(levelType)) {
                     availableLevels.add(levelType);
                 }
+                postIds.put(levelType, p.getId());
 
-                int vocabCount = (p.getVocabularies() != null) ? p.getVocabularies().size() : 0;
-                String readTimeStr = (p.getReadTime() != null && !p.getReadTime().isBlank())
-                        ? p.getReadTime()
-                        : Math.max(2, (int) Math.ceil((p.getWordCount() != null ? p.getWordCount() : 250) / 100.0)) + " min read";
+                int vCount = (p.getVocabularies() != null) ? p.getVocabularies().size() : 0;
+                if (vCount > maxVocabCount) maxVocabCount = vCount;
 
-                CatalogLessonDto.LevelDetailDto detail = CatalogLessonDto.LevelDetailDto.builder()
-                        .postId(p.getId())
-                        .cefrLevel(p.getLevel() != null ? p.getLevel().name() : "B1")
-                        .readTime(readTimeStr)
-                        .vocabCount(vocabCount)
-                        .wordCount(p.getWordCount())
+                if (p.getTotalReads() != null) totalReads += p.getTotalReads();
+                if (p.getLikesCount() != null) totalLikes += p.getLikesCount();
+                if (Boolean.TRUE.equals(p.getFeatured())) isFeatured = true;
+
+                levelDetails.put(levelType, CatalogLessonDto.LevelDetailDto.builder()
+                        .readTime(p.getReadTime() != null ? p.getReadTime() : "4 min read")
+                        .vocabCount(vCount)
+                        .wordCount(p.getWordCount() != null ? p.getWordCount() : 350)
                         .summary(p.getSummary())
-                        .build();
-
-                levelDetails.put(levelType, detail);
+                        .build());
             }
 
-            availableLevels.sort(String::compareTo);
-
-            int maxVocabCount = levelDetails.values().stream()
-                    .mapToInt(CatalogLessonDto.LevelDetailDto::getVocabCount)
-                    .max()
-                    .orElse(0);
-
-            boolean isFeatured = groupPosts.stream().anyMatch(p -> Boolean.TRUE.equals(p.getFeatured()));
-            int totalReads = groupPosts.stream().mapToInt(p -> p.getTotalReads() != null ? p.getTotalReads() : 0).sum();
-            int totalLikes = groupPosts.stream().mapToInt(p -> p.getLikesCount() != null ? p.getLikesCount() : 0).sum();
+            availableLevels.sort((l1, l2) -> {
+                int n1 = Integer.parseInt(l1.replaceAll("\\D+", ""));
+                int n2 = Integer.parseInt(l2.replaceAll("\\D+", ""));
+                return Integer.compare(n1, n2);
+            });
 
             CatalogLessonDto dto = CatalogLessonDto.builder()
                     .id(primary.getId())
+                    .postIds(postIds)
                     .topicGroup(primary.getTopicGroup())
                     .titleEn(primary.getTitleEn())
                     .titleVi(primary.getTitleVi())

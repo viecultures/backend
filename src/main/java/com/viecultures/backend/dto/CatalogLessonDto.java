@@ -12,6 +12,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class CatalogLessonDto {
     private String id;
+    private Map<String, String> postIds; // Keyed by "Level 1", "Level 2", "Level 3"
     private String topicGroup;
     private String titleEn;
     private String titleVi;

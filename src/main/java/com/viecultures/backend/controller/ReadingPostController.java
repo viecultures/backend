@@ -40,15 +40,18 @@ public class ReadingPostController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Lấy danh sách bài đọc", description = "Hỗ trợ lọc theo chủ đề (topic), vùng miền (region), nhóm bài (topicGroup), trình độ CEFR (level) và tìm kiếm tự do theo từ khóa")
+    @Operation(summary = "Lấy danh sách bài đọc", description = "Hỗ trợ lọc theo chủ đề (topic), vùng miền (region), nhóm bài (topicGroup), trình độ CEFR (level), bài đọc độc lập (standalone), hành trình (journeyId) và tìm kiếm tự do theo từ khóa")
     @GetMapping
     public ResponseEntity<List<ReadingPostResponse>> getPosts(
             @RequestParam(required = false) String topic,
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String topicGroup,
             @RequestParam(required = false) CefrLevel level,
+            @RequestParam(required = false) Boolean standalone,
+            @RequestParam(required = false) String journeyId,
+            @RequestParam(required = false) String provinceId,
             @RequestParam(required = false) String query) {
-        List<ReadingPostResponse> posts = readingPostService.getPosts(topic, level, query, region, topicGroup);
+        List<ReadingPostResponse> posts = readingPostService.getPosts(topic, level, query, region, topicGroup, standalone, journeyId, provinceId);
         return ResponseEntity.ok(posts);
     }
 
@@ -59,14 +62,14 @@ public class ReadingPostController {
         return ResponseEntity.ok(post);
     }
 
-    @Operation(summary = "Tạo mới bài đọc", description = "Tạo bài đọc mới kèm các đoạn song ngữ và từ vựng trích xuất")
+    @Operation(summary = "Tạo mới bài đọc", description = "Tạo bài đọc mới kèm các đoạn song ngữ, từ vựng và gán vào hành trình nếu có")
     @PostMapping
     public ResponseEntity<ReadingPostResponse> createPost(@RequestBody ReadingPostRequest request) {
         ReadingPostResponse created = readingPostService.createPost(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @Operation(summary = "Cập nhật bài đọc", description = "Cập nhật thông tin bài đọc, danh sách đoạn văn và từ vựng theo ID")
+    @Operation(summary = "Cập nhật bài đọc", description = "Cập nhật thông tin bài đọc, danh sách đoạn văn, từ vựng và hành trình theo ID")
     @PutMapping("/{id}")
     public ResponseEntity<ReadingPostResponse> updatePost(
             @PathVariable String id,
@@ -75,21 +78,17 @@ public class ReadingPostController {
         return ResponseEntity.ok(updated);
     }
 
-    @Operation(summary = "Xóa bài đọc", description = "Xóa bài đọc và các dữ liệu liên kết liên quan theo ID")
+    @Operation(summary = "Xóa bài đọc", description = "Xóa hoàn toàn bài đọc và các đoạn song ngữ, từ vựng liên kết")
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deletePost(@PathVariable String id) {
         readingPostService.deletePost(id);
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Xóa bài đọc thành công",
-                "id", id
-        ));
+        return ResponseEntity.ok(Map.of("success", true, "message", "Đã xóa bài đọc ID: " + id));
     }
 
-    @Operation(summary = "Tăng lượt đọc bài", description = "Ghi nhận 1 lượt đọc mới khi người dùng mở bài")
+    @Operation(summary = "Tăng lượt đọc", description = "Cộng 1 vào tổng số lượt đọc bài viết")
     @PostMapping("/{id}/read")
-    public ResponseEntity<Map<String, Object>> incrementReadCount(@PathVariable String id) {
+    public ResponseEntity<Map<String, Object>> incrementReads(@PathVariable String id) {
         readingPostService.incrementReads(id);
-        return ResponseEntity.ok(Map.of("success", true, "message", "Đã ghi nhận lượt đọc"));
+        return ResponseEntity.ok(Map.of("success", true, "message", "Đã cập nhật lượt đọc bài viết"));
     }
 }

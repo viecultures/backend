@@ -20,6 +20,17 @@ public class ReadingPost {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "journey_id")
+    @ToString.Exclude
+    private LearningJourney journey;
+
+    @Column(name = "chapter_order")
+    private Integer chapterOrder;
+
+    @Column(name = "province_id")
+    private String provinceId;
+
     @Column(name = "topic_group")
     private String topicGroup;
 

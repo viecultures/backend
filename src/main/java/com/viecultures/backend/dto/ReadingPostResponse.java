@@ -12,6 +12,10 @@ import java.util.List;
 @AllArgsConstructor
 public class ReadingPostResponse {
     private String id;
+    private String journeyId;
+    private String journeyTitleEn;
+    private Integer chapterOrder;
+    private String provinceId;
     private String topicGroup;
     private String titleEn;
     private String titleVi;
