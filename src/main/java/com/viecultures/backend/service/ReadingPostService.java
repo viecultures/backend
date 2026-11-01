@@ -91,6 +91,11 @@ public class ReadingPostService {
     @Transactional(readOnly = true)
     public ReadingPostResponse getPostById(String id) {
         ReadingPost post = readingPostRepository.findById(id)
+                .or(() -> {
+                    if ("tet-holiday".equals(id)) return readingPostRepository.findById("tet-festivities");
+                    if ("tet-festivities".equals(id)) return readingPostRepository.findById("tet-holiday");
+                    return Optional.empty();
+                })
                 .orElseThrow(() -> new RuntimeException("Bài đọc không tồn tại với ID: " + id));
         return toResponse(post, true);
     }
@@ -98,6 +103,7 @@ public class ReadingPostService {
     @Transactional
     public ReadingPostResponse createPost(ReadingPostRequest request) {
         ReadingPost post = ReadingPost.builder()
+                .id(request.getId() != null && !request.getId().isBlank() ? request.getId().trim() : UUID.randomUUID().toString())
                 .topicGroup(request.getTopicGroup())
                 .titleEn(request.getTitleEn())
                 .titleVi(request.getTitleVi())

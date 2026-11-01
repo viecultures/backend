@@ -10,6 +10,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReadingPostRequest {
+    private String id; // Explicit slug ID (e.g. "pho-hanoi-history", "tet-holiday") or null to auto-generate
     private String journeyId; // Link to LearningJourney (nullable for standalone posts)
     private Integer chapterOrder; // Order in journey (1, 2, 3...)
     private String provinceId; // Province identifier (e.g. "ha-noi")
