@@ -17,18 +17,27 @@ import org.springframework.web.client.RestTemplate;
 public class AzureSpeechService {
 
     private final RestTemplate restTemplate;
+    private final DynamicApiKeyService dynamicApiKeyService;
 
-    @Value("${azure.speech.key}")
+    @Value("${azure.speech.key:}")
     private String azureSpeechKey;
 
-    @Value("${azure.speech.region}")
+    @Value("${azure.speech.region:southeastasia}")
     private String azureSpeechRegion;
 
-    public AzureSpeechService(RestTemplate restTemplate) {
+    public AzureSpeechService(RestTemplate restTemplate, DynamicApiKeyService dynamicApiKeyService) {
         this.restTemplate = restTemplate;
+        this.dynamicApiKeyService = dynamicApiKeyService;
     }
 
     public boolean isConfigured() {
+        String activeKey = dynamicApiKeyService.getActiveKey("AZURE", "TTS");
+        if (activeKey != null && !activeKey.trim().isEmpty()
+                && !activeKey.equalsIgnoreCase("your_key_here")
+                && !activeKey.equalsIgnoreCase("your_azure_speech_key_here")) {
+            return true;
+        }
+
         return azureSpeechKey != null &&
                 !azureSpeechKey.trim().isEmpty() &&
                 !azureSpeechKey.equalsIgnoreCase("your_key_here") &&
@@ -36,25 +45,35 @@ public class AzureSpeechService {
     }
 
     /**
-     * Gọi trực tiếp Azure Speech REST API để chuyển đổi văn bản sang file âm thanh
-     * MP3
+     * Goi truc tiep Azure Speech REST API de chuyen doi van ban sang file am thanh MP3
      */
     public byte[] synthesize(String text, String voice, String speed) {
-        if (!isConfigured()) {
+        String keyToUse = dynamicApiKeyService.getActiveKey("AZURE", "TTS");
+        if (keyToUse == null || keyToUse.trim().isEmpty()) {
+            keyToUse = azureSpeechKey;
+        }
+
+        if (keyToUse == null || keyToUse.trim().isEmpty()
+                || keyToUse.equalsIgnoreCase("your_key_here")
+                || keyToUse.equalsIgnoreCase("your_azure_speech_key_here")) {
             throw new TtsException("AZURE_UNAUTHORIZED", 401,
-                    "Chưa cấu hình AZURE_SPEECH_KEY hoặc key đang mang giá trị mẫu trong file .env. Vui lòng cập nhật API key.");
+                    "Chua cau hinh AZURE_SPEECH_KEY hoac key dang mang gia tri mau trong file .env. Vui long cap nhat API key.");
+        }
+
+        String regionToUse = dynamicApiKeyService.getActiveAzureRegion();
+        if (regionToUse == null || regionToUse.trim().isEmpty()) {
+            regionToUse = (azureSpeechRegion != null && !azureSpeechRegion.trim().isEmpty())
+                    ? azureSpeechRegion.trim() : "southeastasia";
         }
 
         String targetVoice = (voice == null || voice.trim().isEmpty()) ? "en-US-JennyNeural" : mapVoice(voice.trim());
         String targetSpeed = (speed == null || speed.trim().isEmpty()) ? "0%" : formatSpeed(speed.trim());
         String ssml = buildSsml(text, targetVoice, targetSpeed);
 
-        String endpoint = String.format("https://%s.tts.speech.microsoft.com/cognitiveservices/v1",
-                (azureSpeechRegion != null && !azureSpeechRegion.trim().isEmpty()) ? azureSpeechRegion.trim()
-                        : "southeastasia");
+        String endpoint = String.format("https://%s.tts.speech.microsoft.com/cognitiveservices/v1", regionToUse.trim());
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Ocp-Apim-Subscription-Key", azureSpeechKey.trim());
+        headers.set("Ocp-Apim-Subscription-Key", keyToUse.trim());
         headers.setContentType(MediaType.parseMediaType("application/ssml+xml"));
         headers.set("X-Microsoft-OutputFormat", "audio-16khz-128kbitrate-mono-mp3");
         headers.set("User-Agent", "EnglishLearningApp");
@@ -69,7 +88,7 @@ public class AzureSpeechService {
             byte[] body = response.getBody();
             if (body == null || body.length == 0) {
                 throw new TtsException("AZURE_EMPTY_RESPONSE", 500,
-                        "Azure Speech API trả về phản hồi rỗng không chứa dữ liệu âm thanh");
+                        "Azure Speech API tra ve phan hoi rong khong chua du lieu am thanh");
             }
             log.info("Azure Speech API generated successfully: bytes={}", body.length);
             return body;
@@ -81,28 +100,28 @@ public class AzureSpeechService {
 
             if (status == 401) {
                 throw new TtsException("AZURE_UNAUTHORIZED", 401,
-                        "Azure Speech API Key không hợp lệ hoặc đã hết hạn (HTTP 401). Vui lòng kiểm tra AZURE_SPEECH_KEY trong .env");
+                        "Azure Speech API Key khong hop le hoac da het han (HTTP 401). Vui long kiem tra AZURE_SPEECH_KEY");
             } else if (status == 429) {
                 throw new TtsException("AZURE_RATE_LIMITED", 429,
-                        "Đã vượt quá hạn mức request hoặc số lượng ký tự hàng tháng của gói Free Azure F0 (HTTP 429).");
+                        "Da vuot qua han muc request hoac so luong ky tu hang thang cua goi Free Azure F0 (HTTP 429).");
             } else if (status == 400) {
                 throw new TtsException("AZURE_BAD_REQUEST", 400,
-                        "Lỗi định dạng cấu trúc SSML hoặc tham số không hợp lệ từ Azure (HTTP 400): " + responseBody);
+                        "Loi dinh dang cau truc SSML hoac tham so khong hop le tu Azure (HTTP 400): " + responseBody);
             } else {
                 throw new TtsException("AZURE_API_ERROR", status,
-                        "Lỗi giao tiếp với Azure Speech API (HTTP " + status + "): " + responseBody);
+                        "Loi giao tiep voi Azure Speech API (HTTP " + status + "): " + responseBody);
             }
         } catch (TtsException te) {
             throw te;
         } catch (Exception ex) {
             log.error("Unexpected exception invoking Azure Speech API: {}", ex.getMessage());
             throw new TtsException("AZURE_INTERNAL_ERROR", 500,
-                    "Không thể kết nối tới máy chủ Azure Speech API: " + ex.getMessage());
+                    "Khong the ket noi toi may chu Azure Speech API: " + ex.getMessage());
         }
     }
 
     /**
-     * Chuẩn hóa cấu trúc SSML (Speech Synthesis Markup Language) chuẩn XML
+     * Chuan hoa cau truc SSML (Speech Synthesis Markup Language) chuan XML
      */
     public String buildSsml(String text, String voice, String speed) {
         String escapedText = escapeXml(text);
@@ -134,8 +153,7 @@ public class AzureSpeechService {
     }
 
     /**
-     * Tự động ánh xạ tên giọng Gemini nếu client truyền voice Gemini sang Azure
-     * voice
+     * Tu dong anh xa ten giong Gemini neu client truyen voice Gemini sang Azure voice
      */
     private String mapVoice(String voice) {
         if (voice.equalsIgnoreCase("Amanda") || voice.equalsIgnoreCase("en-US-AmandaMultilingualNeural")) {

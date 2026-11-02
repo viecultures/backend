@@ -24,6 +24,12 @@ public class CreateAiKeyRequest {
     @NotBlank(message = "API key khong duoc de trong")
     private String apiKey;
 
+    private String modelName;
+
+    private String region;
+
+    private String extraConfig;
+
     @Builder.Default
     private Integer priority = 1;
 

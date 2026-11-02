@@ -18,6 +18,8 @@ public class TtsManagerService {
     private final AzureSpeechService azureSpeechService;
     private final GeminiVoiceService geminiVoiceService;
     private final TtsCacheService ttsCacheService;
+    private final AiCostTrackingService aiCostTrackingService;
+    private final DynamicApiKeyService dynamicApiKeyService;
 
     @Value("${tts.provider}")
     private String configuredProvider;
@@ -38,10 +40,14 @@ public class TtsManagerService {
                 ? request.getSpeed().trim()
                 : "0%";
 
-        // Ưu tiên provider truyền trong request (nếu có), nếu không dùng cấu hình TTS_PROVIDER trong .env
+        // Ưu tiên provider truyền trong request (nếu có), kế tiếp cấu hình động activeTtsProvider, nếu không dùng cấu hình TTS_PROVIDER trong .env
+        String defaultProvider = dynamicApiKeyService.getActiveTtsProvider();
+        if (defaultProvider == null || defaultProvider.isBlank()) {
+            defaultProvider = (configuredProvider != null) ? configuredProvider : "azure";
+        }
         String provider = (request.getProvider() != null && !request.getProvider().trim().isEmpty())
                 ? request.getProvider().trim().toLowerCase()
-                : configuredProvider.trim().toLowerCase();
+                : defaultProvider.trim().toLowerCase();
 
         // 1. Tạo MD5 Hash từ (text + voice + speed)
         String hash = ttsCacheService.computeMd5(text, voice, speed);
@@ -70,8 +76,12 @@ public class TtsManagerService {
     }
 
     private TtsResult generateWithAzureProvider(String text, String voice, String speed, String hash) {
+        long start = System.currentTimeMillis();
+        Long configId = dynamicApiKeyService.getActiveConfigId("AZURE", "TTS");
         try {
             byte[] audioBytes = azureSpeechService.synthesize(text, voice, speed);
+            int latency = (int) (System.currentTimeMillis() - start);
+            aiCostTrackingService.recordUsage(configId, "AZURE", "TTS_READER", voice, 0, 0, text.length(), latency, 200);
             ttsCacheService.putCache("azure", hash, audioBytes, ".mp3");
 
             return TtsResult.builder()
@@ -82,12 +92,18 @@ public class TtsManagerService {
                     .build();
 
         } catch (Exception ex) {
+            int latency = (int) (System.currentTimeMillis() - start);
+            aiCostTrackingService.recordUsage(configId, "AZURE", "TTS_READER", voice, 0, 0, text.length(), latency, 500);
             log.warn("Azure Speech generation failed: {}.", ex.getMessage());
 
             if (fallbackEnabled) {
                 log.info("Initiating automatic fallback to Gemini Neural Voice backup...");
+                Long geminiConfigId = dynamicApiKeyService.getActiveConfigId("GEMINI", "TTS");
+                long fallbackStart = System.currentTimeMillis();
                 try {
                     byte[] geminiAudio = geminiVoiceService.synthesizeAudioBytes(text, voice);
+                    int fallbackLatency = (int) (System.currentTimeMillis() - fallbackStart);
+                    aiCostTrackingService.recordUsage(geminiConfigId, "GEMINI", "TTS_READER", voice, 0, 0, text.length(), fallbackLatency, 200);
                     ttsCacheService.putCache("gemini", hash, geminiAudio, ".mp3");
 
                     return TtsResult.builder()
@@ -110,8 +126,12 @@ public class TtsManagerService {
     }
 
     private TtsResult generateWithGeminiProvider(String text, String voice, String speed, String hash) {
+        long start = System.currentTimeMillis();
+        Long configId = dynamicApiKeyService.getActiveConfigId("GEMINI", "TTS");
         try {
             byte[] audioBytes = geminiVoiceService.synthesizeAudioBytes(text, voice);
+            int latency = (int) (System.currentTimeMillis() - start);
+            aiCostTrackingService.recordUsage(configId, "GEMINI", "TTS_READER", voice, 0, 0, text.length(), latency, 200);
             ttsCacheService.putCache("gemini", hash, audioBytes, ".mp3");
 
             return TtsResult.builder()

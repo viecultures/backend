@@ -15,7 +15,9 @@ import com.viecultures.backend.entity.ParagraphPair;
 import com.viecultures.backend.entity.ReadingPost;
 import com.viecultures.backend.repository.CompanionChatMessageRepository;
 import com.viecultures.backend.repository.ReadingPostRepository;
+import com.viecultures.backend.service.AiCostTrackingService;
 import com.viecultures.backend.service.CompanionChatService;
+import com.viecultures.backend.service.DynamicApiKeyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +45,8 @@ public class CompanionChatServiceImpl implements CompanionChatService {
     private final CompanionChatMessageRepository companionChatMessageRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final DynamicApiKeyService dynamicApiKeyService;
+    private final AiCostTrackingService aiCostTrackingService;
 
     @Value("${gemini.chat.api.key}")
     private String geminiApiKey;
@@ -50,11 +54,11 @@ public class CompanionChatServiceImpl implements CompanionChatService {
     @Value("${gemini.chat.api.url:https://generativelanguage.googleapis.com/v1beta/models}")
     private String geminiApiUrl;
 
-    // Primary and failover models for text chat
-    private static final List<String> GEMINI_CHAT_MODELS = List.of(
-            "gemini-3.8-flash",
-            "gemini-3.5-flash",
-            "gemini-2.5-flash",
+    // Default and failover models for Gemini text generation
+    private static final List<String> DEFAULT_GEMINI_FALLBACK_MODELS = List.of(
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
             "gemini-flash-latest"
     );
 
@@ -303,9 +307,17 @@ public class CompanionChatServiceImpl implements CompanionChatService {
     private String generateCompanionReply(CompanionChatRequest request, String groundedContext) {
         String systemInstruction = buildSystemPrompt(groundedContext, request.getLanguage());
 
-        for (String model : GEMINI_CHAT_MODELS) {
+        Long configId = dynamicApiKeyService.getActiveConfigId("GEMINI", "CHAT");
+        String activeKey = dynamicApiKeyService.getActiveKey("GEMINI", "CHAT");
+        String keyToUse = (activeKey != null && !activeKey.isBlank()) ? activeKey : geminiApiKey;
+
+        String primaryModel = dynamicApiKeyService.getActiveGeminiChatModel();
+        List<String> modelsToTry = resolveCandidateModels(primaryModel);
+
+        for (String model : modelsToTry) {
+            long startTime = System.currentTimeMillis();
             try {
-                String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, geminiApiKey);
+                String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, keyToUse);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
@@ -348,8 +360,15 @@ public class CompanionChatServiceImpl implements CompanionChatService {
                 HttpEntity<String> entity = new HttpEntity<>(objectMapper.writeValueAsString(rootNode), headers);
                 ResponseEntity<String> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, String.class);
 
+                int latencyMs = (int) (System.currentTimeMillis() - startTime);
+
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     JsonNode respNode = objectMapper.readTree(response.getBody());
+                    JsonNode usageMetadata = respNode.path("usageMetadata");
+                    int promptTokens = usageMetadata.path("promptTokenCount").asInt(0);
+                    int completionTokens = usageMetadata.path("candidatesTokenCount").asInt(0);
+                    aiCostTrackingService.recordUsage(configId, "GEMINI", "COMPANION_CHAT", model, promptTokens, completionTokens, 0, latencyMs, 200);
+
                     JsonNode candidates = respNode.path("candidates");
                     if (candidates.isArray() && !candidates.isEmpty()) {
                         JsonNode parts = candidates.get(0).path("content").path("parts");
@@ -359,9 +378,16 @@ public class CompanionChatServiceImpl implements CompanionChatService {
                     }
                 }
             } catch (HttpStatusCodeException httpEx) {
+                int latencyMs = (int) (System.currentTimeMillis() - startTime);
                 log.warn("Gemini model [{}] failed with HTTP {}: {}", model, httpEx.getStatusCode(), httpEx.getResponseBodyAsString());
+                if (httpEx.getStatusCode().value() == 429 || httpEx.getStatusCode().value() == 403) {
+                    dynamicApiKeyService.markCooldown(configId, httpEx.getStatusCode().value(), 15);
+                }
+                aiCostTrackingService.recordUsage(configId, "GEMINI", "COMPANION_CHAT", model, 0, 0, 0, latencyMs, httpEx.getStatusCode().value());
             } catch (Exception ex) {
+                int latencyMs = (int) (System.currentTimeMillis() - startTime);
                 log.error("Unexpected error invoking Gemini model [{}]: {}", model, ex.getMessage(), ex);
+                aiCostTrackingService.recordUsage(configId, "GEMINI", "COMPANION_CHAT", model, 0, 0, 0, latencyMs, 500);
             }
         }
 
@@ -437,9 +463,17 @@ public class CompanionChatServiceImpl implements CompanionChatService {
     }
 
     private String invokeGeminiTranslation(String text, String systemInstruction) {
-        for (String model : GEMINI_CHAT_MODELS) {
+        Long configId = dynamicApiKeyService.getActiveConfigId("GEMINI", "TRANSLATE");
+        String activeKey = dynamicApiKeyService.getActiveKey("GEMINI", "TRANSLATE");
+        String keyToUse = (activeKey != null && !activeKey.isBlank()) ? activeKey : geminiApiKey;
+
+        String primaryModel = dynamicApiKeyService.getActiveGeminiTranslateModel();
+        List<String> modelsToTry = resolveCandidateModels(primaryModel);
+
+        for (String model : modelsToTry) {
+            long startTime = System.currentTimeMillis();
             try {
-                String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, geminiApiKey);
+                String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, keyToUse);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
@@ -468,8 +502,15 @@ public class CompanionChatServiceImpl implements CompanionChatService {
                 HttpEntity<String> entity = new HttpEntity<>(objectMapper.writeValueAsString(rootNode), headers);
                 ResponseEntity<String> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, String.class);
 
+                int latencyMs = (int) (System.currentTimeMillis() - startTime);
+
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     JsonNode respNode = objectMapper.readTree(response.getBody());
+                    JsonNode usageMetadata = respNode.path("usageMetadata");
+                    int promptTokens = usageMetadata.path("promptTokenCount").asInt(0);
+                    int completionTokens = usageMetadata.path("candidatesTokenCount").asInt(0);
+                    aiCostTrackingService.recordUsage(configId, "GEMINI", "COMPANION_TRANSLATE", model, promptTokens, completionTokens, 0, latencyMs, 200);
+
                     JsonNode candidates = respNode.path("candidates");
                     if (candidates.isArray() && !candidates.isEmpty()) {
                         JsonNode parts = candidates.get(0).path("content").path("parts");
@@ -482,14 +523,34 @@ public class CompanionChatServiceImpl implements CompanionChatService {
                     }
                 }
             } catch (HttpStatusCodeException httpEx) {
+                int latencyMs = (int) (System.currentTimeMillis() - startTime);
                 log.warn("Gemini translation model [{}] failed with HTTP {}: {}", model, httpEx.getStatusCode(), httpEx.getResponseBodyAsString());
+                if (httpEx.getStatusCode().value() == 429 || httpEx.getStatusCode().value() == 403) {
+                    dynamicApiKeyService.markCooldown(configId, httpEx.getStatusCode().value(), 15);
+                }
+                aiCostTrackingService.recordUsage(configId, "GEMINI", "COMPANION_TRANSLATE", model, 0, 0, 0, latencyMs, httpEx.getStatusCode().value());
             } catch (Exception ex) {
+                int latencyMs = (int) (System.currentTimeMillis() - startTime);
                 log.error("Unexpected error in Gemini translation model [{}]: {}", model, ex.getMessage(), ex);
+                aiCostTrackingService.recordUsage(configId, "GEMINI", "COMPANION_TRANSLATE", model, 0, 0, 0, latencyMs, 500);
             }
         }
 
         log.warn("All Gemini models failed for translation. Returning original text as fallback.");
         return text;
+    }
+
+    private List<String> resolveCandidateModels(String primaryModel) {
+        List<String> models = new ArrayList<>();
+        if (primaryModel != null && !primaryModel.isBlank()) {
+            models.add(primaryModel.trim());
+        }
+        for (String fallback : DEFAULT_GEMINI_FALLBACK_MODELS) {
+            if (!models.contains(fallback)) {
+                models.add(fallback);
+            }
+        }
+        return models;
     }
 
     private static final Pattern PROMPTS_DELIMITER_PATTERN = Pattern.compile(

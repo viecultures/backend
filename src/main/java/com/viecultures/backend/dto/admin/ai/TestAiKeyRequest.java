@@ -15,4 +15,6 @@ public class TestAiKeyRequest {
     private String provider;
     private String serviceType;
     private String apiKey;
+    private String modelName;
+    private String region;
 }

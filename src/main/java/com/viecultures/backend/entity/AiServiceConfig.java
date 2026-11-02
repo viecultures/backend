@@ -41,6 +41,15 @@ public class AiServiceConfig {
     @Column(name = "masked_key", nullable = false, length = 100)
     private String maskedKey;
 
+    @Column(name = "model_name", length = 100)
+    private String modelName;
+
+    @Column(name = "region", length = 50)
+    private String region;
+
+    @Column(name = "extra_config", columnDefinition = "TEXT")
+    private String extraConfig;
+
     @Builder.Default
     @Column(name = "is_active", nullable = false)
     private boolean active = true;

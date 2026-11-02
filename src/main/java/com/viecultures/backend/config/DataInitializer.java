@@ -3,18 +3,24 @@ package com.viecultures.backend.config;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viecultures.backend.dto.ReadingPostRequest;
+import com.viecultures.backend.entity.AiServiceConfig;
 import com.viecultures.backend.entity.LearningJourney;
 import com.viecultures.backend.entity.SubscriptionPlan;
 import com.viecultures.backend.entity.SubscriptionTransaction;
+import com.viecultures.backend.entity.SystemAiSetting;
 import com.viecultures.backend.entity.User;
+import com.viecultures.backend.repository.AiServiceConfigRepository;
 import com.viecultures.backend.repository.LearningJourneyRepository;
 import com.viecultures.backend.repository.ReadingPostRepository;
 import com.viecultures.backend.repository.SubscriptionPlanRepository;
 import com.viecultures.backend.repository.SubscriptionTransactionRepository;
+import com.viecultures.backend.repository.SystemAiSettingRepository;
 import com.viecultures.backend.repository.UserRepository;
+import com.viecultures.backend.service.CryptoService;
 import com.viecultures.backend.service.ReadingPostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -37,8 +43,23 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionTransactionRepository subscriptionTransactionRepository;
+    private final AiServiceConfigRepository aiServiceConfigRepository;
+    private final SystemAiSettingRepository systemAiSettingRepository;
+    private final CryptoService cryptoService;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+
+    @Value("${gemini.chat.api.key:${gemini.api.key:}}")
+    private String geminiChatKey;
+
+    @Value("${gemini.api.key:}")
+    private String geminiVoiceKey;
+
+    @Value("${azure.speech.key:}")
+    private String azureSpeechKey;
+
+    @Value("${azure.speech.region:southeastasia}")
+    private String azureSpeechRegion;
 
     @Override
     public void run(String... args) {
@@ -46,6 +67,8 @@ public class DataInitializer implements CommandLineRunner {
         seedLearningJourneys();
         seedReadingPosts();
         seedSubscriptionData();
+        seedDefaultAiConfigs();
+        seedSystemAiSettings();
     }
 
     private void initDefaultAdmin() {
@@ -271,6 +294,114 @@ public class DataInitializer implements CommandLineRunner {
             }
         } catch (Exception e) {
             log.error("[DataInitializer] Loi khi khoi tao subscription plans: {}", e.getMessage(), e);
+        }
+    }
+
+    private void seedDefaultAiConfigs() {
+        try {
+            if (aiServiceConfigRepository.count() == 0) {
+                List<AiServiceConfig> list = new ArrayList<>();
+                if (geminiChatKey != null && !geminiChatKey.isBlank() && !geminiChatKey.contains("your_")) {
+                    list.add(AiServiceConfig.builder()
+                            .provider("GEMINI")
+                            .serviceType("CHAT")
+                            .keyLabel("Gemini AI Studio (Companion Chat)")
+                            .encryptedKey(cryptoService.encrypt(geminiChatKey.trim()))
+                            .maskedKey(cryptoService.maskKey(geminiChatKey.trim()))
+                            .modelName("gemini-2.0-flash")
+                            .active(true)
+                            .priority(1)
+                            .status("HEALTHY")
+                            .build());
+                    list.add(AiServiceConfig.builder()
+                            .provider("GEMINI")
+                            .serviceType("TRANSLATE")
+                            .keyLabel("Gemini AI Studio (Dich thuat song ngu)")
+                            .encryptedKey(cryptoService.encrypt(geminiChatKey.trim()))
+                            .maskedKey(cryptoService.maskKey(geminiChatKey.trim()))
+                            .modelName("gemini-2.0-flash")
+                            .active(true)
+                            .priority(1)
+                            .status("HEALTHY")
+                            .build());
+                }
+                if (azureSpeechKey != null && !azureSpeechKey.isBlank() && !azureSpeechKey.contains("your_")) {
+                    String region = (azureSpeechRegion != null && !azureSpeechRegion.isBlank())
+                            ? azureSpeechRegion.trim() : "southeastasia";
+                    list.add(AiServiceConfig.builder()
+                            .provider("AZURE")
+                            .serviceType("TTS")
+                            .keyLabel("Azure AI Speech (Neural Voices)")
+                            .encryptedKey(cryptoService.encrypt(azureSpeechKey.trim()))
+                            .maskedKey(cryptoService.maskKey(azureSpeechKey.trim()))
+                            .region(region)
+                            .active(true)
+                            .priority(1)
+                            .status("HEALTHY")
+                            .build());
+                }
+                if (geminiVoiceKey != null && !geminiVoiceKey.isBlank() && !geminiVoiceKey.contains("your_") && !geminiVoiceKey.equals(geminiChatKey)) {
+                    list.add(AiServiceConfig.builder()
+                            .provider("GEMINI")
+                            .serviceType("TTS")
+                            .keyLabel("Gemini Voice (Du phong TTS)")
+                            .encryptedKey(cryptoService.encrypt(geminiVoiceKey.trim()))
+                            .maskedKey(cryptoService.maskKey(geminiVoiceKey.trim()))
+                            .modelName("gemini-2.0-flash")
+                            .active(true)
+                            .priority(2)
+                            .status("HEALTHY")
+                            .build());
+                }
+                if (!list.isEmpty()) {
+                    aiServiceConfigRepository.saveAll(list);
+                    log.info("[DataInitializer] Da seed {} cau hinh khoa API AI mac dinh tu .env", list.size());
+                }
+            }
+        } catch (Exception e) {
+            log.error("[DataInitializer] Loi khi khoi tao cau hinh API AI mac dinh: {}", e.getMessage(), e);
+        }
+    }
+
+    private void seedSystemAiSettings() {
+        try {
+            String region = (azureSpeechRegion != null && !azureSpeechRegion.isBlank())
+                    ? azureSpeechRegion.trim() : "southeastasia";
+
+            if (!systemAiSettingRepository.existsBySettingKey("gemini_chat_model")) {
+                systemAiSettingRepository.save(SystemAiSetting.builder()
+                        .settingKey("gemini_chat_model")
+                        .settingValue("gemini-2.0-flash")
+                        .description("Mo hinh Gemini cho tinh nang tro chuyen tro ly ao")
+                        .build());
+            }
+
+            if (!systemAiSettingRepository.existsBySettingKey("gemini_translate_model")) {
+                systemAiSettingRepository.save(SystemAiSetting.builder()
+                        .settingKey("gemini_translate_model")
+                        .settingValue("gemini-2.0-flash")
+                        .description("Mo hinh Gemini cho tinh nang dich thuat van ban")
+                        .build());
+            }
+
+            if (!systemAiSettingRepository.existsBySettingKey("azure_speech_region")) {
+                systemAiSettingRepository.save(SystemAiSetting.builder()
+                        .settingKey("azure_speech_region")
+                        .settingValue(region)
+                        .description("Vung may chu Azure AI Speech")
+                        .build());
+            }
+
+            if (!systemAiSettingRepository.existsBySettingKey("active_tts_provider")) {
+                systemAiSettingRepository.save(SystemAiSetting.builder()
+                        .settingKey("active_tts_provider")
+                        .settingValue("azure")
+                        .description("Nha cung cap giong doc TTS chinh")
+                        .build());
+            }
+            log.info("[DataInitializer] Da khoi tao thiet lap he thong AI SystemAiSettings");
+        } catch (Exception e) {
+            log.error("[DataInitializer] Loi khi khoi tao SystemAiSettings: {}", e.getMessage(), e);
         }
     }
 

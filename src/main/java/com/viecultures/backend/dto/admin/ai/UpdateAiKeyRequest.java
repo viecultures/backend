@@ -13,6 +13,9 @@ public class UpdateAiKeyRequest {
 
     private String keyLabel;
     private String apiKey;
+    private String modelName;
+    private String region;
+    private String extraConfig;
     private Integer priority;
     private Boolean active;
     private String status;

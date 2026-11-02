@@ -18,6 +18,9 @@ public class AiServiceConfigDto {
     private String serviceType;
     private String keyLabel;
     private String maskedKey;
+    private String modelName;
+    private String region;
+    private String extraConfig;
     private boolean active;
     private int priority;
     private String status;
