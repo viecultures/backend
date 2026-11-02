@@ -1,0 +1,19 @@
+package com.viecultures.backend.dto.admin.ai;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateAiKeyRequest {
+
+    private String keyLabel;
+    private String apiKey;
+    private Integer priority;
+    private Boolean active;
+    private String status;
+}
