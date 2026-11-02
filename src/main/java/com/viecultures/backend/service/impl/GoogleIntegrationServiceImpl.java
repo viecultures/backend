@@ -92,14 +92,16 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
 
             JsonNode serviceAccountNode = loadServiceAccountCredentials();
             if (serviceAccountNode == null) {
-                throw new IllegalStateException("Không tìm thấy thông tin cấu hình service-account.json hợp lệ");
+                log.info("Không tìm thấy cấu hình service-account.json hợp lệ. Google Service sẽ chuyển sang chế độ fallback an toàn.");
+                return null;
             }
 
             String clientEmail = serviceAccountNode.path("client_email").asText();
             String privateKeyPem = serviceAccountNode.path("private_key").asText();
 
             if (clientEmail.isBlank() || privateKeyPem.isBlank()) {
-                throw new IllegalStateException("service-account.json thiếu client_email hoặc private_key");
+                log.warn("service-account.json thiếu client_email hoặc private_key. Kích hoạt fallback.");
+                return null;
             }
 
             PrivateKey privateKey = parsePrivateKey(privateKeyPem);
@@ -143,10 +145,11 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
                 }
             }
 
-            throw new IllegalStateException("Phản hồi từ Google OAuth2 token endpoint không chứa access_token hợp lệ");
+            log.warn("Phản hồi từ Google OAuth2 token endpoint không chứa access_token hợp lệ");
+            return null;
         } catch (Exception e) {
-            log.error("Lỗi xác thực OAuth2 với Google Service Account: {}", e.getMessage(), e);
-            throw new RuntimeException("Không thể cấp phát Google OAuth2 token: " + e.getMessage(), e);
+            log.warn("Không thể cấp phát Google OAuth2 token ({}), chuyển sang chế độ fallback: {}", e.getClass().getSimpleName(), e.getMessage());
+            return null;
         } finally {
             tokenLock.unlock();
         }
@@ -159,6 +162,9 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
 
         try {
             String token = getOAuth2AccessToken();
+            if (token == null) {
+                return buildGa4FallbackResponse(safeRange, "Chưa cấu hình Google Service Account credentials (service-account.json)");
+            }
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -207,6 +213,9 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
 
         try {
             String token = getOAuth2AccessToken();
+            if (token == null) {
+                return buildGscFallbackResponse(startDateStr, endDateStr, safeRange, "Chưa cấu hình Google Service Account credentials (service-account.json)");
+            }
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(token);
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -566,32 +575,46 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
 
     private JsonNode loadServiceAccountCredentials() {
         try {
+            // 0. Biến môi trường GOOGLE_CREDENTIALS_JSON chứa trực tiếp nội dung JSON (hữu ích khi deploy Cloud)
+            String jsonContent = System.getenv("GOOGLE_CREDENTIALS_JSON");
+            if (jsonContent == null || jsonContent.isBlank()) {
+                jsonContent = System.getenv("GOOGLE_SERVICE_ACCOUNT_JSON");
+            }
+            if (jsonContent != null && !jsonContent.isBlank()) {
+                return objectMapper.readTree(jsonContent.trim());
+            }
+
             // 1. Kiểm tra đường dẫn trực tiếp
-            File file = new File(credentialsPath);
-            if (file.exists() && file.isFile()) {
-                try (InputStream is = new FileInputStream(file)) {
-                    return objectMapper.readTree(is);
+            if (credentialsPath != null && !credentialsPath.isBlank()) {
+                File file = new File(credentialsPath);
+                if (file.exists() && file.isFile()) {
+                    try (InputStream is = new FileInputStream(file)) {
+                        return objectMapper.readTree(is);
+                    }
+                }
+
+                // 2. Kiểm tra thư mục gốc cha ../service-account.json
+                File parentFile = new File(".." + File.separator + credentialsPath);
+                if (parentFile.exists() && parentFile.isFile()) {
+                    try (InputStream is = new FileInputStream(parentFile)) {
+                        return objectMapper.readTree(is);
+                    }
+                }
+
+                // 3. Kiểm tra classpath
+                ClassPathResource cpr = new ClassPathResource(credentialsPath);
+                if (cpr.exists()) {
+                    try (InputStream is = cpr.getInputStream()) {
+                        return objectMapper.readTree(is);
+                    }
                 }
             }
 
-            // 2. Kiểm tra thư mục gốc cha ../service-account.json
-            File parentFile = new File(".." + File.separator + credentialsPath);
-            if (parentFile.exists() && parentFile.isFile()) {
-                try (InputStream is = new FileInputStream(parentFile)) {
-                    return objectMapper.readTree(is);
-                }
-            }
-
-            // 3. Kiểm tra classpath
-            ClassPathResource cpr = new ClassPathResource(credentialsPath);
-            if (cpr.exists()) {
-                try (InputStream is = cpr.getInputStream()) {
-                    return objectMapper.readTree(is);
-                }
-            }
-
-            // 4. Biến môi trường GOOGLE_APPLICATION_CREDENTIALS
+            // 4. Biến môi trường GOOGLE_APPLICATION_CREDENTIALS hoặc GOOGLE_CREDENTIALS_PATH
             String envPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+            if (envPath == null || envPath.isBlank()) {
+                envPath = System.getenv("GOOGLE_CREDENTIALS_PATH");
+            }
             if (envPath != null && !envPath.isBlank()) {
                 File envFile = new File(envPath);
                 if (envFile.exists() && envFile.isFile()) {
@@ -601,7 +624,7 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
                 }
             }
         } catch (Exception e) {
-            log.error("Không thể tải tập tin chứng chỉ Google Service Account: {}", e.getMessage());
+            log.warn("Không thể tải tập tin chứng chỉ Google Service Account: {}", e.getMessage());
         }
         return null;
     }
