@@ -48,7 +48,7 @@ public class CompanionChatServiceImpl implements CompanionChatService {
     private final DynamicApiKeyService dynamicApiKeyService;
     private final AiCostTrackingService aiCostTrackingService;
 
-    @Value("${gemini.chat.api.key}")
+    @Value("${gemini.chat.api.key:}")
     private String geminiApiKey;
 
     @Value("${gemini.chat.api.url:https://generativelanguage.googleapis.com/v1beta/models}")

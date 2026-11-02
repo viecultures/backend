@@ -26,7 +26,7 @@ public class GeminiVoiceService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${gemini.api.key}")
+    @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
     @Value("${gemini.model}")

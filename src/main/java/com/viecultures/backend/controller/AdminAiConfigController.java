@@ -29,7 +29,7 @@ public class AdminAiConfigController {
 
     @Operation(summary = "Lay danh sach tat ca cau hinh khoa AI",
                description = "Tra ve danh sach cac khoa AI da ma hoa va an ky tu, sap xep theo nha cung cap va do uu tien.")
-    @GetMapping("/keys")
+    @GetMapping({"", "/keys"})
     public ResponseEntity<ApiResponse<List<AiServiceConfigDto>>> getAllKeys() {
         List<AiServiceConfigDto> configs = adminAiConfigService.getAllConfigs();
         return ResponseEntity.ok(ApiResponse.ok(configs));
@@ -37,7 +37,7 @@ public class AdminAiConfigController {
 
     @Operation(summary = "Them cau hinh khoa AI moi",
                description = "Ma hoa AES-256 va luu tru khoa API cua Gemini hoac Azure Speech.")
-    @PostMapping("/keys")
+    @PostMapping({"", "/keys"})
     public ResponseEntity<ApiResponse<AiServiceConfigDto>> createKey(
             @Valid @RequestBody CreateAiKeyRequest request) {
         AiServiceConfigDto created = adminAiConfigService.createConfig(request);
