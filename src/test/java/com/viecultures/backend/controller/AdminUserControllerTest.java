@@ -91,6 +91,23 @@ class AdminUserControllerTest {
     }
 
     @Test
+    @DisplayName("getUsers_serviceThrowsException_returns500: Khi service gap su co bat thuong, controller tra ve HTTP 500")
+    void getUsers_serviceThrowsException_returns500() throws Exception {
+        when(adminUserService.getUsers(any(), any(), any(), any(), any(Pageable.class)))
+                .thenThrow(new RuntimeException("Database connection failure"));
+
+        mockMvc.perform(get("/api/v1/admin/users")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.errorCode").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(jsonPath("$.message").value("Database connection failure"));
+
+        verify(adminUserService, times(1))
+                .getUsers(any(), any(), any(), any(), any(Pageable.class));
+    }
+
+    @Test
     @DisplayName("exportUsersCsv_returns200AndAttachmentHeader: Goi GET /api/v1/admin/users/export tra ve HTTP 200 kem header attachment va UTF-8 BOM")
     void exportUsersCsv_returns200AndAttachmentHeader() throws Exception {
         String csvContent = "\uFEFFID,Họ và tên,Email,Vai trò,Trình độ CEFR,Từ đã lưu,Phương thức đăng nhập,Ngày tạo,Trạng thái\r\n"

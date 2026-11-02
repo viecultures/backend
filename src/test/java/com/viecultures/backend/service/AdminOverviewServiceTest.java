@@ -212,4 +212,29 @@ class AdminOverviewServiceTest {
         assertEquals(5.0, result.getAvgReadsPerPost());
         assertEquals("HEALTHY", result.getSystemStatus());
     }
+
+    @Test
+    @DisplayName("getOverviewStats_breakdownFailure_handledGracefully: Khi query CEFR hoac region bi loi, service van giu HEALTHY va tra ve map rong")
+    void getOverviewStats_breakdownFailure_handledGracefully() {
+        when(userRepository.count()).thenReturn(80L);
+        when(userActivityLogRepository.countDistinctActiveUsersSince(any(LocalDateTime.class))).thenReturn(15L);
+        when(readingPostRepository.count()).thenReturn(30L);
+        when(readingPostRepository.sumTotalReads()).thenReturn(150L);
+        when(readingPostRepository.countGroupByLevel()).thenThrow(new RuntimeException("CEFR aggregation syntax error"));
+        when(readingPostRepository.countGroupByRegion()).thenThrow(new RuntimeException("Region aggregation syntax error"));
+
+        AdminOverviewStatsDto result = adminOverviewService.getOverviewStats();
+
+        assertNotNull(result);
+        assertEquals(80L, result.getTotalUsers());
+        assertEquals(15L, result.getActiveLearnersWeek());
+        assertEquals(30L, result.getTotalPosts());
+        assertEquals(150L, result.getTotalReads());
+        assertEquals(5.0, result.getAvgReadsPerPost());
+        assertEquals("HEALTHY", result.getSystemStatus());
+        assertNotNull(result.getCefrCoverage());
+        assertTrue(result.getCefrCoverage().isEmpty());
+        assertNotNull(result.getRegionCoverage());
+        assertTrue(result.getRegionCoverage().isEmpty());
+    }
 }
