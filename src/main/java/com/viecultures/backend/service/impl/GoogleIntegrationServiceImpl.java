@@ -114,8 +114,7 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
                     .issuer(clientEmail)
                     .claim("scope", OAUTH_SCOPES)
                     .audience()
-                    .add(GOOGLE_TOKEN_URI)
-                    .and()
+                    .single(GOOGLE_TOKEN_URI)
                     .issuedAt(Date.from(now))
                     .expiration(Date.from(expiration))
                     .signWith(privateKey, Jwts.SIG.RS256)
@@ -405,7 +404,7 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(reqBody, headers);
         ResponseEntity<JsonNode> response = restTemplate.postForEntity(uri, entity, JsonNode.class);
 
-        List<GscReportResponse.GscTimelinePoint> points = new ArrayList<>();
+        Map<String, GscReportResponse.GscTimelinePoint> rowMap = new HashMap<>();
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
             JsonNode rows = response.getBody().path("rows");
             if (rows.isArray()) {
@@ -416,7 +415,7 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
                     double ctr = Math.round(row.path("ctr").asDouble(0.0) * 10000.0) / 100.0;
                     double position = Math.round(row.path("position").asDouble(0.0) * 10.0) / 10.0;
 
-                    points.add(GscReportResponse.GscTimelinePoint.builder()
+                    rowMap.put(date, GscReportResponse.GscTimelinePoint.builder()
                             .date(date)
                             .clicks(clicks)
                             .impressions(impressions)
@@ -426,7 +425,27 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
                 }
             }
         }
-        points.sort(Comparator.comparing(GscReportResponse.GscTimelinePoint::getDate));
+
+        List<GscReportResponse.GscTimelinePoint> points = new ArrayList<>();
+        LocalDate cur = LocalDate.parse(startDate);
+        LocalDate end = LocalDate.parse(endDate);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        while (!cur.isAfter(end)) {
+            String dateKey = cur.format(dtf);
+            if (rowMap.containsKey(dateKey)) {
+                points.add(rowMap.get(dateKey));
+            } else {
+                points.add(GscReportResponse.GscTimelinePoint.builder()
+                        .date(dateKey)
+                        .clicks(0)
+                        .impressions(0)
+                        .ctr(0.0)
+                        .position(0.0)
+                        .build());
+            }
+            cur = cur.plusDays(1);
+        }
         return points;
     }
 

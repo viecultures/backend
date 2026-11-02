@@ -261,65 +261,16 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("[DataInitializer] Da seed thanh cong 4 goi dang ky mac dinh vao co so du lieu");
             }
 
-            if (subscriptionTransactionRepository.count() == 0) {
-                SubscriptionTransaction tx1 = SubscriptionTransaction.builder()
-                        .transactionCode("TX_HERITAGE_9021")
-                        .userEmail("tran.van.an@gmail.com")
-                        .userName("Trần Văn An")
-                        .planCode("PRO")
-                        .planName("Di sản Toàn diện (Pro)")
-                        .amountVnd(169000L)
-                        .transferContent("VC PRO TRAN VAN AN 9021")
-                        .status("PENDING")
-                        .createdAt(LocalDateTime.now().minusHours(2))
-                        .build();
-
-                SubscriptionTransaction tx2 = SubscriptionTransaction.builder()
-                        .transactionCode("TX_HERITAGE_8392")
-                        .userEmail("le.thi.mai@outlook.com")
-                        .userName("Lê Thị Mai")
-                        .planCode("STARTER")
-                        .planName("Di sản Khởi hành")
-                        .amountVnd(99000L)
-                        .transferContent("VC STARTER LE THI MAI 8392")
-                        .status("APPROVED")
-                        .createdAt(LocalDateTime.now().minusDays(1))
-                        .approvedAt(LocalDateTime.now().minusDays(1).plusMinutes(15))
-                        .note("Đã đối soát khớp tiền trên Techcombank")
-                        .build();
-
-                SubscriptionTransaction tx3 = SubscriptionTransaction.builder()
-                        .transactionCode("TX_HERITAGE_7714")
-                        .userEmail("nguyen.hoang.duc@gmail.com")
-                        .userName("Nguyễn Hoàng Đức")
-                        .planCode("LIFETIME")
-                        .planName("Học giả Trọn đời")
-                        .amountVnd(1117500L)
-                        .transferContent("VC LIFETIME NGUYEN HOANG DUC 7714")
-                        .status("APPROVED")
-                        .createdAt(LocalDateTime.now().minusDays(3))
-                        .approvedAt(LocalDateTime.now().minusDays(3).plusMinutes(40))
-                        .note("Đã cấp quyền Master trọn đời")
-                        .build();
-
-                SubscriptionTransaction tx4 = SubscriptionTransaction.builder()
-                        .transactionCode("TX_HERITAGE_6520")
-                        .userEmail("pham.quoc.huy@yahoo.com")
-                        .userName("Phạm Quốc Huy")
-                        .planCode("PRO")
-                        .planName("Di sản Toàn diện (Pro)")
-                        .amountVnd(50000L)
-                        .transferContent("VC HUY CK")
-                        .status("REJECTED")
-                        .note("Chuyển thiếu số tiền so với quy định gói (cần 169.000đ, chỉ chuyển 50.000đ)")
-                        .createdAt(LocalDateTime.now().minusDays(4))
-                        .build();
-
-                subscriptionTransactionRepository.saveAll(Arrays.asList(tx1, tx2, tx3, tx4));
-                log.info("[DataInitializer] Da seed 4 giao dich mau vao co so du lieu");
+            // Xoa toan bo cac giao dich gia lap mau cu (neu co) de co so du lieu 100% sach
+            List<SubscriptionTransaction> testTxs = subscriptionTransactionRepository.findAll().stream()
+                    .filter(t -> t.getTransactionCode() != null && t.getTransactionCode().startsWith("TX_HERITAGE_"))
+                    .collect(java.util.stream.Collectors.toList());
+            if (!testTxs.isEmpty()) {
+                subscriptionTransactionRepository.deleteAll(testTxs);
+                log.info("[DataInitializer] Da xoa toan bo {} giao dich gia lap khoi database", testTxs.size());
             }
         } catch (Exception e) {
-            log.error("[DataInitializer] Loi khi seed subscription data: {}", e.getMessage(), e);
+            log.error("[DataInitializer] Loi khi khoi tao subscription plans: {}", e.getMessage(), e);
         }
     }
 

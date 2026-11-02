@@ -34,7 +34,7 @@ public class AdminSubscriptionServiceImpl implements AdminSubscriptionService {
             long rejected = transactionRepository.countByStatus("REJECTED");
 
             long totalDecided = approved + rejected;
-            double approvalRate = totalDecided > 0 ? (approved * 100.0) / totalDecided : 100.0;
+            double approvalRate = totalDecided > 0 ? (approved * 100.0) / totalDecided : 0.0;
 
             List<SubscriptionTransaction> allApproved = transactionRepository.findByStatusOrderByCreatedAtDesc("APPROVED");
             Map<String, Long> tierDist = new HashMap<>();
