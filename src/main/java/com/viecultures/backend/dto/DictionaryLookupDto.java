@@ -23,6 +23,10 @@ public class DictionaryLookupDto {
     private Integer searchCount;
     private boolean fromCache;
 
+    public static DictionaryLookupDto fromEntity(DictionaryEntry entry) {
+        return fromEntity(entry, true, "");
+    }
+
     public static DictionaryLookupDto fromEntity(DictionaryEntry entry, boolean fromCache, String fallbackContext) {
         return DictionaryLookupDto.builder()
                 .id(entry.getId())
