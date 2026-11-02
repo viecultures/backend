@@ -14,10 +14,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +34,7 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @Operation(summary = "Lấy danh sách người dùng phân trang & tìm kiếm",
-               description = "Tìm kiếm theo tên/email, lọc theo vai trò (role) và trạng thái (enabled) kèm phân trang.")
+               description = "Tìm kiếm theo tên/email, lọc theo vai trò (role), trạng thái (enabled) và phân nhóm marketing (filterGroup) kèm phân trang.")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<AdminUserSummaryDto>>> getUsers(
             @Parameter(description = "Từ khóa tìm kiếm theo tên hoặc email")
@@ -42,6 +43,8 @@ public class AdminUserController {
             @RequestParam(required = false) String role,
             @Parameter(description = "Lọc theo trạng thái kích hoạt (true/false)")
             @RequestParam(required = false) Boolean enabled,
+            @Parameter(description = "Phân nhóm marketing (all, recent_7d, inactive, active, admin)")
+            @RequestParam(required = false) String filterGroup,
             @Parameter(description = "Số trang (bắt đầu từ 0)")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Kích thước mỗi trang (1-100)")
@@ -49,8 +52,28 @@ public class AdminUserController {
         int safePage = Math.max(0, page);
         int safeSize = Math.min(Math.max(1, size), 100);
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<AdminUserSummaryDto> users = adminUserService.getUsers(query, role, enabled, pageable);
+        Page<AdminUserSummaryDto> users = adminUserService.getUsers(query, role, enabled, filterGroup, pageable);
         return ResponseEntity.ok(ApiResponse.ok(users));
+    }
+
+    @Operation(summary = "Xuất danh sách người dùng ra định dạng CSV",
+               description = "Xuất dữ liệu người dùng ra tệp tin CSV mã hóa UTF-8 kèm BOM tương thích Microsoft Excel tiếng Việt.")
+    @GetMapping("/export")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> exportUsersCsv(
+            @Parameter(description = "Từ khóa tìm kiếm theo tên hoặc email")
+            @RequestParam(required = false) String query,
+            @Parameter(description = "Lọc theo vai trò (ROLE_USER, ROLE_ADMIN)")
+            @RequestParam(required = false) String role,
+            @Parameter(description = "Lọc theo trạng thái kích hoạt (true/false)")
+            @RequestParam(required = false) Boolean enabled,
+            @Parameter(description = "Phân nhóm marketing (all, recent_7d, inactive, active, admin)")
+            @RequestParam(required = false) String filterGroup) {
+        byte[] csvBytes = adminUserService.exportUsersCsv(query, role, enabled, filterGroup);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"viecultures_users.csv\"")
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .body(csvBytes);
     }
 
     @Operation(summary = "Xem thông tin chi tiết một người dùng",
@@ -106,7 +129,7 @@ public class AdminUserController {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
         log.error("Admin user management error: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage(), "OPERATION_FAILED"));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(ex.getMessage(), "INTERNAL_SERVER_ERROR"));
     }
 }

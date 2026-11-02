@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 
 public interface AdminUserService {
     Page<AdminUserSummaryDto> getUsers(String query, String role, Boolean enabled, Pageable pageable);
+    Page<AdminUserSummaryDto> getUsers(String query, String role, Boolean enabled, String filterGroup, Pageable pageable);
+    byte[] exportUsersCsv(String query, String role, Boolean enabled, String filterGroup);
     AdminUserSummaryDto getUserById(String id);
     AdminUserSummaryDto updateUserStatus(String id, boolean enabled);
     AdminUserSummaryDto updateUserStatus(String id, boolean enabled, String currentAdminEmail);

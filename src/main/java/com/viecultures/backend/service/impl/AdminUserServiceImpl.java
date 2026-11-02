@@ -8,9 +8,17 @@ import com.viecultures.backend.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -23,10 +31,122 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     @Transactional(readOnly = true)
     public Page<AdminUserSummaryDto> getUsers(String query, String role, Boolean enabled, Pageable pageable) {
+        return getUsers(query, role, enabled, null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<AdminUserSummaryDto> getUsers(String query, String role, Boolean enabled, String filterGroup, Pageable pageable) {
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
         String cleanRole = (role != null && !role.trim().isEmpty()) ? role.trim() : null;
-        Page<User> users = userRepository.searchUsers(cleanQuery, cleanRole, enabled, pageable);
-        return users.map(this::toDto);
+        String cleanFilterGroup = (filterGroup != null && !filterGroup.trim().isEmpty()) ? filterGroup.trim() : null;
+
+        if (cleanFilterGroup == null || "all".equalsIgnoreCase(cleanFilterGroup)) {
+            Page<User> users = userRepository.searchUsers(cleanQuery, cleanRole, enabled, pageable);
+            return users.map(this::toDto);
+        }
+
+        Sort sort = (pageable != null && pageable.getSort().isSorted())
+                ? pageable.getSort()
+                : Sort.by(Sort.Direction.DESC, "createdAt");
+        List<User> userList = userRepository.searchUsersList(cleanQuery, cleanRole, enabled, sort);
+
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        List<AdminUserSummaryDto> filtered = userList.stream()
+                .map(this::toDto)
+                .filter(dto -> matchesFilterGroup(dto, cleanFilterGroup, sevenDaysAgo))
+                .toList();
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), filtered.size());
+        List<AdminUserSummaryDto> subList = (start <= end && start < filtered.size())
+                ? filtered.subList(start, end)
+                : Collections.emptyList();
+
+        return new PageImpl<>(subList, pageable, filtered.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportUsersCsv(String query, String role, Boolean enabled, String filterGroup) {
+        log.info("Generating CSV export for users: query={}, role={}, enabled={}, filterGroup={}",
+                query, role, enabled, filterGroup);
+        try {
+            String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
+            String cleanRole = (role != null && !role.trim().isEmpty()) ? role.trim() : null;
+            String cleanFilterGroup = (filterGroup != null && !filterGroup.trim().isEmpty()) ? filterGroup.trim() : null;
+
+            List<User> userList = userRepository.searchUsersList(
+                    cleanQuery, cleanRole, enabled, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+            LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+            List<AdminUserSummaryDto> dtos = userList.stream()
+                    .map(this::toDto)
+                    .filter(dto -> matchesFilterGroup(dto, cleanFilterGroup, sevenDaysAgo))
+                    .toList();
+
+            StringBuilder sb = new StringBuilder();
+            // BOM for UTF-8 in Excel
+            sb.append('\uFEFF');
+
+            // Header: 'ID', 'Họ và tên', 'Email', 'Vai trò', 'Trình độ CEFR', 'Từ đã lưu', 'Phương thức đăng nhập', 'Ngày tạo', 'Trạng thái'
+            sb.append("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Từ đã lưu,Phương thức đăng nhập,Ngày tạo,Trạng thái\r\n");
+
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+            for (AdminUserSummaryDto u : dtos) {
+                String roleDisplay = "ROLE_ADMIN".equalsIgnoreCase(u.getRole()) || "ADMIN".equalsIgnoreCase(u.getRole())
+                        ? "Quản trị viên"
+                        : "Học viên";
+                String cefrDisplay = u.getEnglishLevel() != null ? u.getEnglishLevel().name() : "Chưa xác định";
+                String statusDisplay = u.isEnabled() ? "Đang hoạt động" : "Đã khóa";
+                String createdAtDisplay = u.getCreatedAt() != null ? u.getCreatedAt().format(dtf) : "";
+
+                sb.append(escapeCsv(u.getId())).append(',')
+                  .append(escapeCsv(u.getName())).append(',')
+                  .append(escapeCsv(u.getEmail())).append(',')
+                  .append(escapeCsv(roleDisplay)).append(',')
+                  .append(escapeCsv(cefrDisplay)).append(',')
+                  .append(u.getSavedVocabCount()).append(',')
+                  .append(escapeCsv(u.getAuthProvider())).append(',')
+                  .append(escapeCsv(createdAtDisplay)).append(',')
+                  .append(escapeCsv(statusDisplay)).append("\r\n");
+            }
+
+            return sb.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            log.error("Error occurred while generating users CSV export: {}", ex.getMessage(), ex);
+            return ("\uFEFFID,Họ và tên,Email,Vai trò,Trình độ CEFR,Từ đã lưu,Phương thức đăng nhập,Ngày tạo,Trạng thái\r\n")
+                    .getBytes(StandardCharsets.UTF_8);
+        }
+    }
+
+    private boolean matchesFilterGroup(AdminUserSummaryDto dto, String filterGroup, LocalDateTime sevenDaysAgo) {
+        if (filterGroup == null || filterGroup.isBlank() || "all".equalsIgnoreCase(filterGroup)) {
+            return true;
+        }
+        String fg = filterGroup.trim().toLowerCase();
+        switch (fg) {
+            case "recent_7d":
+                return dto.getCreatedAt() != null && dto.getCreatedAt().isAfter(sevenDaysAgo);
+            case "admin":
+                return dto.getRole() != null && dto.getRole().toUpperCase().contains("ADMIN");
+            case "active":
+                return dto.getSavedVocabCount() > 0 || dto.isEnabled();
+            case "inactive":
+                return dto.getSavedVocabCount() == 0 || !dto.isEnabled();
+            default:
+                return true;
+        }
+    }
+
+    private String escapeCsv(Object val) {
+        if (val == null) return "";
+        String str = String.valueOf(val);
+        if (str.contains(",") || str.contains("\"") || str.contains("\n") || str.contains("\r")) {
+            return "\"" + str.replace("\"", "\"\"") + "\"";
+        }
+        return str;
     }
 
     @Override
@@ -53,7 +173,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         String adminEmail = resolveCurrentAdminEmail(currentAdminEmail);
 
-        // Ngăn chặn admin tự khóa tài khoản của chính mình
+        // Ngan chan admin tu khoa tai khoan cua chinh minh
         if (!enabled && adminEmail != null && adminEmail.equalsIgnoreCase(user.getEmail())) {
             throw new IllegalStateException("Bạn không thể tự khóa tài khoản quản trị của chính mình để tránh mất quyền truy cập hệ thống.");
         }
@@ -91,7 +211,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         String adminEmail = resolveCurrentAdminEmail(currentAdminEmail);
 
-        // Ngăn chặn admin tự tước quyền ROLE_ADMIN của chính mình
+        // Ngan chan admin tu tuoc quyen ROLE_ADMIN cua chinh minh
         if (adminEmail != null && adminEmail.equalsIgnoreCase(user.getEmail())) {
             boolean isCurrentlyAdmin = "ROLE_ADMIN".equalsIgnoreCase(user.getRole()) || "ADMIN".equalsIgnoreCase(user.getRole());
             if (isCurrentlyAdmin && !"ROLE_ADMIN".equalsIgnoreCase(normalizedRole)) {

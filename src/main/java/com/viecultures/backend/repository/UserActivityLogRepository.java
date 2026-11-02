@@ -26,4 +26,7 @@ public interface UserActivityLogRepository extends JpaRepository<UserActivityLog
 
     @Query("SELECT l.payload FROM UserActivityLog l WHERE (l.eventType = 'ARTICLE_READ' OR l.eventCategory = 'READER') AND l.payload IS NOT NULL AND TRIM(l.payload) <> ''")
     List<String> findRecentArticlePayloads(Pageable pageable);
+
+    @Query("SELECT COUNT(DISTINCT l.userId) FROM UserActivityLog l WHERE l.userId IS NOT NULL AND l.createdAt >= :since")
+    long countDistinctActiveUsersSince(@org.springframework.data.repository.query.Param("since") java.time.LocalDateTime since);
 }

@@ -22,4 +22,13 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
            "LOWER(p.topic) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(p.summary) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<ReadingPost> searchPosts(@Param("query") String query, Pageable pageable);
+
+    @Query("SELECT COALESCE(SUM(p.totalReads), 0) FROM ReadingPost p")
+    Long sumTotalReads();
+
+    @Query("SELECT p.level, COUNT(p) FROM ReadingPost p WHERE p.level IS NOT NULL GROUP BY p.level")
+    List<Object[]> countGroupByLevel();
+
+    @Query("SELECT COALESCE(NULLIF(p.region, ''), 'Toàn quốc'), COUNT(p) FROM ReadingPost p GROUP BY COALESCE(NULLIF(p.region, ''), 'Toàn quốc')")
+    List<Object[]> countGroupByRegion();
 }
