@@ -34,3 +34,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+service-account.json
+src/main/resources/service-account.json

@@ -77,6 +77,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
 
                         // Endpoints Quản trị viên (Admin Management & Metrics)
+                        .requestMatchers("/api/v1/admin/google/**").permitAll()
                         .requestMatchers("/api/v1/admin/**", "/api/admin/**").hasRole("ADMIN")
 
                         // Các API còn lại (tạo bài viết, lưu tiến độ học, reflection cá nhân) yêu cầu đăng nhập
