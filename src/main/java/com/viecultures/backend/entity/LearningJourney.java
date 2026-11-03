@@ -43,7 +43,10 @@ public class LearningJourney {
 
     @Column(name = "status")
     @Builder.Default
-    private String status = "published"; // published, draft, upcoming
+    private String status = "published"; // published, draft, upcoming, scheduled
+
+    @Column(name = "scheduled_publish_at")
+    private LocalDateTime scheduledPublishAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

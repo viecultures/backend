@@ -10,10 +10,12 @@ import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Normalizer;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -26,8 +28,42 @@ public class LearningJourneyService {
     private final LearningJourneyRepository journeyRepository;
     private final ReadingPostRepository readingPostRepository;
 
-    @Transactional(readOnly = true)
+    /**
+     * Tự động quét và xuất bản các hành trình học có trạng thái "scheduled" đã đến hạn.
+     */
+    @Transactional
+    public int autoPublishScheduledJourneys() {
+        LocalDateTime now = LocalDateTime.now();
+        List<LearningJourney> dueJourneys = journeyRepository.findByStatusIgnoreCaseAndScheduledPublishAtLessThanEqual("scheduled", now);
+        if (dueJourneys.isEmpty()) {
+            return 0;
+        }
+
+        for (LearningJourney journey : dueJourneys) {
+            journey.setStatus("published");
+            journeyRepository.save(journey);
+            log.info("[LearningJourneyService] Đã tự động xuất bản hành trình học: ID={}, Title={}, Lên lịch={}",
+                    journey.getId(), journey.getTitleEn(), journey.getScheduledPublishAt());
+        }
+        return dueJourneys.size();
+    }
+
+    /**
+     * Cron chạy ngầm định kỳ mỗi 60 giây kiểm tra và kích hoạt xuất bản các hành trình đến hạn.
+     */
+    @Scheduled(fixedRate = 60000)
+    public void runScheduledPublishCron() {
+        int count = autoPublishScheduledJourneys();
+        if (count > 0) {
+            log.info("[ScheduledPublish Cron] Đã tự động xuất bản thành công {} hành trình học.", count);
+        }
+    }
+
+    @Transactional
     public List<LearningJourneyResponse> getJourneys(String region, String provinceId, String theme, String status, String query) {
+        // Đồng bộ các hành trình đến hạn xuất bản trước khi lọc và trả kết quả
+        autoPublishScheduledJourneys();
+
         Specification<LearningJourney> spec = (root, q, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -79,6 +115,17 @@ public class LearningJourneyService {
             slug = slug + "-" + System.currentTimeMillis() % 10000;
         }
 
+        String targetStatus = request.getStatus() != null && !request.getStatus().isBlank()
+                ? request.getStatus().toLowerCase().trim()
+                : "published";
+
+        LocalDateTime scheduledPublishAt = request.getScheduledPublishAt();
+        if ("scheduled".equalsIgnoreCase(targetStatus)) {
+            if (scheduledPublishAt != null && !scheduledPublishAt.isAfter(LocalDateTime.now())) {
+                targetStatus = "published";
+            }
+        }
+
         LearningJourney journey = LearningJourney.builder()
                 .id(slug)
                 .titleEn(request.getTitleEn())
@@ -88,7 +135,8 @@ public class LearningJourneyService {
                 .region(request.getRegion() != null ? request.getRegion().toLowerCase().trim() : "north")
                 .description(request.getDescription())
                 .imageUrl(request.getImageUrl())
-                .status(request.getStatus() != null && !request.getStatus().isBlank() ? request.getStatus().toLowerCase().trim() : "published")
+                .status(targetStatus)
+                .scheduledPublishAt(scheduledPublishAt)
                 .build();
 
         LearningJourney saved = journeyRepository.save(journey);
@@ -112,7 +160,19 @@ public class LearningJourneyService {
         if (request.getRegion() != null) journey.setRegion(request.getRegion().toLowerCase().trim());
         journey.setDescription(request.getDescription());
         journey.setImageUrl(request.getImageUrl());
-        if (request.getStatus() != null) journey.setStatus(request.getStatus().toLowerCase().trim());
+        if (request.getStatus() != null) {
+            String targetStatus = request.getStatus().toLowerCase().trim();
+            LocalDateTime scheduledPublishAt = request.getScheduledPublishAt();
+            if ("scheduled".equalsIgnoreCase(targetStatus)) {
+                if (scheduledPublishAt != null && !scheduledPublishAt.isAfter(LocalDateTime.now())) {
+                    targetStatus = "published";
+                }
+            }
+            journey.setStatus(targetStatus);
+            journey.setScheduledPublishAt(scheduledPublishAt);
+        } else if (request.getScheduledPublishAt() != null) {
+            journey.setScheduledPublishAt(request.getScheduledPublishAt());
+        }
 
         LearningJourney updated = journeyRepository.save(journey);
 
@@ -197,6 +257,7 @@ public class LearningJourneyService {
                 .description(journey.getDescription())
                 .imageUrl(journey.getImageUrl())
                 .status(journey.getStatus())
+                .scheduledPublishAt(journey.getScheduledPublishAt())
                 .createdAt(journey.getCreatedAt())
                 .chapters(chapterDtos)
                 .build();

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -13,4 +14,5 @@ public interface LearningJourneyRepository extends JpaRepository<LearningJourney
     List<LearningJourney> findByProvinceIdIgnoreCase(String provinceId);
     List<LearningJourney> findByThemeIgnoreCase(String theme);
     List<LearningJourney> findByStatusIgnoreCase(String status);
+    List<LearningJourney> findByStatusIgnoreCaseAndScheduledPublishAtLessThanEqual(String status, LocalDateTime dateTime);
 }

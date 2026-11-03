@@ -19,6 +19,7 @@ public class LearningJourneyResponse {
     private String description;
     private String imageUrl;
     private String status;
+    private LocalDateTime scheduledPublishAt;
     private LocalDateTime createdAt;
     private List<ChapterSummaryDto> chapters;
 

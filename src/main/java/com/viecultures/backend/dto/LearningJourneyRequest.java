@@ -2,6 +2,7 @@ package com.viecultures.backend.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -17,6 +18,7 @@ public class LearningJourneyRequest {
     private String region; // north, central, south
     private String description;
     private String imageUrl;
-    private String status; // published, draft, upcoming
+    private String status; // published, draft, upcoming, scheduled
+    private LocalDateTime scheduledPublishAt; // Scheduled time for automated publishing
     private List<String> chapterPostIds; // Ordered list of ReadingPost IDs to assign to this journey (chặng 1, 2, 3...)
 }
