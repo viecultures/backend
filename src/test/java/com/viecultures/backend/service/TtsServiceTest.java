@@ -120,7 +120,7 @@ class TtsServiceTest {
     @Test
     @DisplayName("SSML Builder: Chuẩn hóa SSML XML và escape ký tự đặc biệt")
     void testAzureSsmlBuildingAndEscaping() {
-        AzureSpeechService service = new AzureSpeechService(null);
+        AzureSpeechService service = new AzureSpeechService(null, null);
         String ssml = service.buildSsml("Fish & chips <special> 'quote' \"double\"", "en-US-JennyNeural", "-15%");
 
         assertTrue(ssml.contains("&amp;"), "Phải escape & thành &amp;");
