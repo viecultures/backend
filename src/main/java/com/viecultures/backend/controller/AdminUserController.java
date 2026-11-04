@@ -1,14 +1,18 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.ApiResponse;
 import com.viecultures.backend.annotation.AuditLog;
+import com.viecultures.backend.dto.ApiResponse;
 import com.viecultures.backend.dto.admin.AdminUserSummaryDto;
+import com.viecultures.backend.dto.admin.LearnerDetailDto;
 import com.viecultures.backend.dto.admin.UpdateUserRoleRequest;
 import com.viecultures.backend.dto.admin.UpdateUserStatusRequest;
+import com.viecultures.backend.entity.UserActivityLog;
 import com.viecultures.backend.service.AdminUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,7 +23,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -87,6 +90,33 @@ public class AdminUserController {
         return ResponseEntity.ok(ApiResponse.ok(user));
     }
 
+    @Operation(summary = "Xem hồ sơ học viên chi tiết 360 độ (Learner Observability)",
+               description = "Truy vấn hồ sơ người dùng, gói đăng ký, lịch sử thanh toán, thống kê chuỗi học tập, từ vựng và bài đọc đã hoàn thành.")
+    @GetMapping("/{id}/details")
+    public ResponseEntity<ApiResponse<LearnerDetailDto>> getLearnerDetails(
+            @Parameter(description = "ID người dùng")
+            @PathVariable String id) {
+        LearnerDetailDto details = adminUserService.getLearnerDetails(id);
+        return ResponseEntity.ok(ApiResponse.ok(details));
+    }
+
+    @Operation(summary = "Xem nhật ký hoạt động của học viên",
+               description = "Lấy danh sách nhật ký sự kiện, thao tác tra cứu, học tập phân trang của học viên theo ID.")
+    @GetMapping("/{id}/activity-logs")
+    public ResponseEntity<ApiResponse<Page<UserActivityLog>>> getLearnerActivityLogs(
+            @Parameter(description = "ID người dùng")
+            @PathVariable String id,
+            @Parameter(description = "Số trang (bắt đầu từ 0)")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Kích thước mỗi trang (1-100)")
+            @RequestParam(defaultValue = "20") int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(1, size), 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<UserActivityLog> logs = adminUserService.getLearnerActivityLogs(id, pageable);
+        return ResponseEntity.ok(ApiResponse.ok(logs));
+    }
+
     @Operation(summary = "Cập nhật trạng thái người dùng (Kích hoạt / Khóa)",
                description = "Bật hoặc tắt trạng thái hoạt động của tài khoản người dùng.")
     @AuditLog(action = "UPDATE_USER_STATUS", entity = "USER", description = "Cập nhật trạng thái kích hoạt / khóa tài khoản người dùng")
@@ -113,6 +143,13 @@ public class AdminUserController {
         String adminEmail = currentUser != null ? currentUser.getUsername() : null;
         AdminUserSummaryDto updated = adminUserService.updateUserRole(id, request.getRole(), adminEmail);
         return ResponseEntity.ok(ApiResponse.ok(updated, "Cập nhật vai trò người dùng thành công"));
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleEntityNotFound(EntityNotFoundException ex) {
+        log.warn("Admin user management entity not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(ex.getMessage(), "NOT_FOUND"));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

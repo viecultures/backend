@@ -52,6 +52,9 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
     @Value("${google.integration.credentials-path:service-account.json}")
     private String credentialsPath;
 
+    @Value("${google.integration.credentials-json:${GOOGLE_CREDENTIALS_JSON:}}")
+    private String credentialsJson;
+
     @Value("${google.integration.ga4-property-id:561849201}")
     private String ga4PropertyId;
 
@@ -576,7 +579,13 @@ public class GoogleIntegrationServiceImpl implements GoogleIntegrationService {
     private JsonNode loadServiceAccountCredentials() {
         try {
             // 0. Biến môi trường GOOGLE_CREDENTIALS_JSON chứa trực tiếp nội dung JSON (hữu ích khi deploy Cloud)
-            String jsonContent = System.getenv("GOOGLE_CREDENTIALS_JSON");
+            String jsonContent = (credentialsJson != null && !credentialsJson.isBlank()) ? credentialsJson : System.getProperty("GOOGLE_CREDENTIALS_JSON");
+            if (jsonContent == null || jsonContent.isBlank()) {
+                jsonContent = System.getenv("GOOGLE_CREDENTIALS_JSON");
+            }
+            if (jsonContent == null || jsonContent.isBlank()) {
+                jsonContent = System.getProperty("GOOGLE_SERVICE_ACCOUNT_JSON");
+            }
             if (jsonContent == null || jsonContent.isBlank()) {
                 jsonContent = System.getenv("GOOGLE_SERVICE_ACCOUNT_JSON");
             }

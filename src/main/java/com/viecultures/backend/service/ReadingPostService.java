@@ -280,6 +280,7 @@ public class ReadingPostService {
 
     public ReadingPostResponse toResponse(ReadingPost post, boolean includeDetails) {
         int vocabCount = post.getVocabularies() != null ? post.getVocabularies().size() : 0;
+        int questionCount = post.getQuestions() != null ? post.getQuestions().size() : 0;
 
         ReadingPostResponse.ReadingPostResponseBuilder builder = ReadingPostResponse.builder()
                 .id(post.getId())
@@ -300,6 +301,7 @@ public class ReadingPostService {
                 .level(post.getLevel())
                 .readTime(post.getReadTime())
                 .vocabCount(vocabCount)
+                .questionCount(questionCount)
                 .totalReads(post.getTotalReads())
                 .likesCount(post.getLikesCount())
                 .featured(Boolean.TRUE.equals(post.getFeatured()))
@@ -326,6 +328,19 @@ public class ReadingPostService {
                     .collect(Collectors.toList()));
         }
 
+        if (post.getQuestions() != null) {
+            builder.questions(post.getQuestions().stream()
+                    .map(q -> ReadingPostResponse.QuizQuestionDto.builder()
+                            .id(q.getId())
+                            .orderIndex(q.getOrderIndex())
+                            .question(q.getQuestion())
+                            .options(q.getOptions())
+                            .correctKey(q.getCorrectKey())
+                            .explanation(q.getExplanation())
+                            .build())
+                    .collect(Collectors.toList()));
+        }
+
         if (includeDetails) {
             if (post.getParagraphs() != null) {
                 builder.paragraphs(post.getParagraphs().stream()
@@ -336,19 +351,6 @@ public class ReadingPostService {
                                 .viText(p.getViText())
                                 .audioTimestampStart(p.getAudioTimestampStart())
                                 .audioTimestampEnd(p.getAudioTimestampEnd())
-                                .build())
-                        .collect(Collectors.toList()));
-            }
-
-            if (post.getQuestions() != null) {
-                builder.questions(post.getQuestions().stream()
-                        .map(q -> ReadingPostResponse.QuizQuestionDto.builder()
-                                .id(q.getId())
-                                .orderIndex(q.getOrderIndex())
-                                .question(q.getQuestion())
-                                .options(q.getOptions())
-                                .correctKey(q.getCorrectKey())
-                                .explanation(q.getExplanation())
                                 .build())
                         .collect(Collectors.toList()));
             }
