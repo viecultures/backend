@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.annotation.AuditLog;
 import com.viecultures.backend.dto.admin.ai.*;
 import com.viecultures.backend.service.AdminAiConfigService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +38,7 @@ public class AdminAiConfigController {
 
     @Operation(summary = "Them cau hinh khoa AI moi",
                description = "Ma hoa AES-256 va luu tru khoa API cua Gemini hoac Azure Speech.")
+    @AuditLog(action = "CREATE_AI_KEY", entity = "AI_CONFIG", description = "Tạo mới cấu hình khóa AI API")
     @PostMapping({"", "/keys"})
     public ResponseEntity<ApiResponse<AiServiceConfigDto>> createKey(
             @Valid @RequestBody CreateAiKeyRequest request) {
@@ -47,6 +49,7 @@ public class AdminAiConfigController {
 
     @Operation(summary = "Cap nhat cau hinh khoa AI",
                description = "Cap nhat nhan khoa, gia tri API key moi, do uu tien hoac trang thai.")
+    @AuditLog(action = "UPDATE_AI_KEY", entity = "AI_CONFIG", description = "Cập nhật thông tin cấu hình khóa AI API")
     @PutMapping("/keys/{id}")
     public ResponseEntity<ApiResponse<AiServiceConfigDto>> updateKey(
             @Parameter(description = "ID cau hinh can cap nhat")
@@ -58,6 +61,7 @@ public class AdminAiConfigController {
 
     @Operation(summary = "Xoa cau hinh khoa AI",
                description = "Xoa bo cau hinh khoa khoi he thong.")
+    @AuditLog(action = "DELETE_AI_KEY", entity = "AI_CONFIG", description = "Xóa bỏ cấu hình khóa AI API")
     @DeleteMapping("/keys/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteKey(
             @Parameter(description = "ID cau hinh can xoa")
@@ -68,6 +72,7 @@ public class AdminAiConfigController {
 
     @Operation(summary = "Bat / tat trang thai kich hoat cua khoa AI",
                description = "Chuyen doi qua lai giua trang thai Active va Inactive cua khoa.")
+    @AuditLog(action = "TOGGLE_AI_KEY", entity = "AI_CONFIG", description = "Chuyển đổi trạng thái kích hoạt khóa AI API")
     @PatchMapping("/keys/{id}/toggle")
     public ResponseEntity<ApiResponse<AiServiceConfigDto>> toggleKeyActive(
             @Parameter(description = "ID cau hinh can chuyen doi trang thai")

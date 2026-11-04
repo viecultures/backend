@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.CatalogResponse;
+import com.viecultures.backend.annotation.AuditLog;
 import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
 import com.viecultures.backend.entity.CefrLevel;
@@ -63,6 +64,7 @@ public class ReadingPostController {
     }
 
     @Operation(summary = "Tạo mới bài đọc", description = "Tạo bài đọc mới kèm các đoạn song ngữ, từ vựng và gán vào hành trình nếu có")
+    @AuditLog(action = "CREATE_POST", entity = "POST", description = "Tạo mới bài đọc song ngữ")
     @PostMapping
     public ResponseEntity<ReadingPostResponse> createPost(@RequestBody ReadingPostRequest request) {
         ReadingPostResponse created = readingPostService.createPost(request);
@@ -70,6 +72,7 @@ public class ReadingPostController {
     }
 
     @Operation(summary = "Cập nhật bài đọc", description = "Cập nhật thông tin bài đọc, danh sách đoạn văn, từ vựng và hành trình theo ID")
+    @AuditLog(action = "UPDATE_POST", entity = "POST", description = "Cập nhật thông tin bài đọc song ngữ")
     @PutMapping("/{id}")
     public ResponseEntity<ReadingPostResponse> updatePost(
             @PathVariable String id,
@@ -79,6 +82,7 @@ public class ReadingPostController {
     }
 
     @Operation(summary = "Xóa bài đọc", description = "Xóa hoàn toàn bài đọc và các đoạn song ngữ, từ vựng liên kết")
+    @AuditLog(action = "DELETE_POST", entity = "POST", description = "Xóa hoàn toàn bài đọc song ngữ")
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deletePost(@PathVariable String id) {
         readingPostService.deletePost(id);

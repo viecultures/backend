@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.annotation.AuditLog;
 import com.viecultures.backend.dto.DictionaryLookupDto;
 import com.viecultures.backend.dto.admin.AdminVocabRequest;
 import com.viecultures.backend.service.AdminVocabService;
@@ -72,6 +73,7 @@ public class AdminVocabController {
 
     @Operation(summary = "Them moi hoac upsert tu vung",
                description = "Them moi tu vung hoac tu dong cap nhat neu tu vung da ton tai trong CSDL.")
+    @AuditLog(action = "CREATE_VOCAB", entity = "VOCABULARY", description = "Thêm mới hoặc upsert từ vựng")
     @PostMapping
     public ResponseEntity<ApiResponse<DictionaryLookupDto>> createVocabulary(
             @Valid @RequestBody AdminVocabRequest request) {
@@ -83,6 +85,7 @@ public class AdminVocabController {
 
     @Operation(summary = "Cap nhat thong tin tu vung theo ID",
                description = "Cap nhat nghia, phien am, vi du ngu canh, trinh do va am thanh cua tu vung.")
+    @AuditLog(action = "UPDATE_VOCAB", entity = "VOCABULARY", description = "Cập nhật thông tin từ vựng")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<DictionaryLookupDto>> updateVocabulary(
             @Parameter(description = "ID cua tu vung can cap nhat")
@@ -95,6 +98,7 @@ public class AdminVocabController {
 
     @Operation(summary = "Xoa tu vung khoi he thong theo ID",
                description = "Xoa hoan toan ban ghi tu vung khoi he thong tu dien.")
+    @AuditLog(action = "DELETE_VOCAB", entity = "VOCABULARY", description = "Xóa từ vựng khỏi hệ thống")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteVocabulary(
             @Parameter(description = "ID cua tu vung can xoa")

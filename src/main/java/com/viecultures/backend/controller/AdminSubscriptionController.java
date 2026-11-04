@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.annotation.AuditLog;
 import com.viecultures.backend.dto.admin.*;
 import com.viecultures.backend.service.AdminSubscriptionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +45,7 @@ public class AdminSubscriptionController {
     }
 
     @Operation(summary = "Duyệt kích hoạt đơn giao dịch chuyển khoản")
+    @AuditLog(action = "APPROVE_TRANSACTION", entity = "SUBSCRIPTION", description = "Phê duyệt đơn giao dịch chuyển khoản")
     @PostMapping("/transactions/{id}/approve")
     public ResponseEntity<ApiResponse<SubscriptionTransactionDto>> approveTransaction(
             @PathVariable String id,
@@ -53,6 +55,7 @@ public class AdminSubscriptionController {
     }
 
     @Operation(summary = "Từ chối đơn giao dịch chuyển khoản kèm lý do")
+    @AuditLog(action = "REJECT_TRANSACTION", entity = "SUBSCRIPTION", description = "Từ chối đơn giao dịch chuyển khoản")
     @PostMapping("/transactions/{id}/reject")
     public ResponseEntity<ApiResponse<SubscriptionTransactionDto>> rejectTransaction(
             @PathVariable String id,
@@ -69,6 +72,7 @@ public class AdminSubscriptionController {
     }
 
     @Operation(summary = "Tạo mới hoặc cập nhật gói cước đăng ký")
+    @AuditLog(action = "SAVE_PLAN", entity = "SUBSCRIPTION", description = "Tạo mới hoặc cập nhật thông tin gói cước đăng ký")
     @PostMapping("/plans")
     public ResponseEntity<ApiResponse<SubscriptionPlanDto>> savePlan(
             @RequestBody SubscriptionPlanDto planDto) {
@@ -77,6 +81,7 @@ public class AdminSubscriptionController {
     }
 
     @Operation(summary = "Bật hoặc tắt trạng thái kinh doanh của gói cước")
+    @AuditLog(action = "TOGGLE_PLAN_STATUS", entity = "SUBSCRIPTION", description = "Chuyển trạng thái kinh doanh của gói cước")
     @PatchMapping("/plans/{id}/toggle-status")
     public ResponseEntity<ApiResponse<SubscriptionPlanDto>> togglePlanStatus(
             @PathVariable String id) {

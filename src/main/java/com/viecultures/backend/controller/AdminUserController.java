@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.annotation.AuditLog;
 import com.viecultures.backend.dto.admin.AdminUserSummaryDto;
 import com.viecultures.backend.dto.admin.UpdateUserRoleRequest;
 import com.viecultures.backend.dto.admin.UpdateUserStatusRequest;
@@ -88,6 +89,7 @@ public class AdminUserController {
 
     @Operation(summary = "Cập nhật trạng thái người dùng (Kích hoạt / Khóa)",
                description = "Bật hoặc tắt trạng thái hoạt động của tài khoản người dùng.")
+    @AuditLog(action = "UPDATE_USER_STATUS", entity = "USER", description = "Cập nhật trạng thái kích hoạt / khóa tài khoản người dùng")
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<AdminUserSummaryDto>> updateUserStatus(
             @Parameter(description = "ID người dùng")
@@ -101,6 +103,7 @@ public class AdminUserController {
 
     @Operation(summary = "Cập nhật vai trò / phân quyền người dùng",
                description = "Thay đổi vai trò người dùng (ROLE_USER, ROLE_ADMIN).")
+    @AuditLog(action = "UPDATE_USER_ROLE", entity = "USER", description = "Cập nhật vai trò / phân quyền người dùng")
     @PatchMapping("/{id}/role")
     public ResponseEntity<ApiResponse<AdminUserSummaryDto>> updateUserRole(
             @Parameter(description = "ID người dùng")
