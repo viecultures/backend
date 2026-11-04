@@ -31,13 +31,15 @@ public class AdminVocabController {
     private final AdminVocabService adminVocabService;
 
     @Operation(summary = "Lay danh sach tu vung phan trang & loc",
-               description = "Ho tro tim kiem theo tu khoa (word, viMeaning), loc theo cap do (A1, A2, B1, B2, C1, C2) va phan trang.")
+               description = "Ho tro tim kiem theo tu khoa (word, viMeaning), loc theo cap do (A1, A2, B1, B2, C1, C2), loc theo bai doc (postId) va phan trang.")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<DictionaryLookupDto>>> getVocabularies(
             @Parameter(description = "Tu khoa tim kiem theo tu tieng Anh hoac nghia tieng Viet")
             @RequestParam(required = false) String search,
             @Parameter(description = "Loc theo cap do CEFR (A1, A2, B1, B2, C1, C2 hoac ALL)")
             @RequestParam(required = false) String level,
+            @Parameter(description = "Loc theo ID bai doc (ReadingPost ID)")
+            @RequestParam(required = false) String postId,
             @Parameter(description = "So trang, bat dau tu 0")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "So luong ban ghi tren moi trang (1-100)")
@@ -56,7 +58,7 @@ public class AdminVocabController {
                 : "createdAt";
 
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(sortDirection, safeSortBy));
-        Page<DictionaryLookupDto> result = adminVocabService.getAdminVocabularies(search, level, pageable);
+        Page<DictionaryLookupDto> result = adminVocabService.getAdminVocabularies(search, level, postId, pageable);
 
         return ResponseEntity.ok(ApiResponse.ok(result));
     }

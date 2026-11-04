@@ -33,4 +33,8 @@ public class AdminVocabRequest {
     private String level;
 
     private String audioUrl;
+
+    private String postId;
+
+    private String usageNote;
 }

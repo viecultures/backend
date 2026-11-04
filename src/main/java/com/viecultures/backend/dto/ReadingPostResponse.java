@@ -30,6 +30,7 @@ public class ReadingPostResponse {
     private String audioTracks;
     private CefrLevel level;
     private String readTime;
+    private Integer vocabCount;
     private Integer totalReads;
     private Integer likesCount;
     private Boolean featured;

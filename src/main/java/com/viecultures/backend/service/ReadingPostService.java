@@ -279,6 +279,8 @@ public class ReadingPostService {
     }
 
     public ReadingPostResponse toResponse(ReadingPost post, boolean includeDetails) {
+        int vocabCount = post.getVocabularies() != null ? post.getVocabularies().size() : 0;
+
         ReadingPostResponse.ReadingPostResponseBuilder builder = ReadingPostResponse.builder()
                 .id(post.getId())
                 .topicGroup(post.getTopicGroup())
@@ -297,6 +299,7 @@ public class ReadingPostService {
                 .audioTracks(post.getAudioTracks())
                 .level(post.getLevel())
                 .readTime(post.getReadTime())
+                .vocabCount(vocabCount)
                 .totalReads(post.getTotalReads())
                 .likesCount(post.getLikesCount())
                 .featured(Boolean.TRUE.equals(post.getFeatured()))
@@ -305,6 +308,22 @@ public class ReadingPostService {
         if (post.getJourney() != null) {
             builder.journeyId(post.getJourney().getId());
             builder.journeyTitleEn(post.getJourney().getTitleEn());
+        }
+
+        if (post.getVocabularies() != null) {
+            builder.vocabularies(post.getVocabularies().stream()
+                    .map(v -> ReadingPostResponse.VocabItemDto.builder()
+                            .id(v.getId())
+                            .word(v.getWord())
+                            .ipa(v.getIpa())
+                            .pos(v.getPos())
+                            .viMeaning(v.getViMeaning())
+                            .contextSentence(v.getContextSentence())
+                            .audioUrl(v.getAudioUrl())
+                            .level(v.getLevel())
+                            .usageNote(v.getUsageNote())
+                            .build())
+                    .collect(Collectors.toList()));
         }
 
         if (includeDetails) {
@@ -317,22 +336,6 @@ public class ReadingPostService {
                                 .viText(p.getViText())
                                 .audioTimestampStart(p.getAudioTimestampStart())
                                 .audioTimestampEnd(p.getAudioTimestampEnd())
-                                .build())
-                        .collect(Collectors.toList()));
-            }
-
-            if (post.getVocabularies() != null) {
-                builder.vocabularies(post.getVocabularies().stream()
-                        .map(v -> ReadingPostResponse.VocabItemDto.builder()
-                                .id(v.getId())
-                                .word(v.getWord())
-                                .ipa(v.getIpa())
-                                .pos(v.getPos())
-                                .viMeaning(v.getViMeaning())
-                                .contextSentence(v.getContextSentence())
-                                .audioUrl(v.getAudioUrl())
-                                .level(v.getLevel())
-                                .usageNote(v.getUsageNote())
                                 .build())
                         .collect(Collectors.toList()));
             }
