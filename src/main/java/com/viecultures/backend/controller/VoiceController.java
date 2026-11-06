@@ -46,6 +46,7 @@ public class VoiceController {
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(ApiResponse.error("Dịch vụ AI Voice chưa được cấu hình key", "CONFIG_MISSING"));
         }
+        log.info("[VoiceController] getLiveSession success: Cap live session thanh cong cho user={}", authentication.getName());
         return ResponseEntity.ok(ApiResponse.ok(
                 LiveSessionResponse.builder()
                         .apiKey(apiKey)

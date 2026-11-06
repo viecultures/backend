@@ -65,6 +65,9 @@ public class SecurityConfig {
                         // Telemetry & User Activity Ingest (Public)
                         .requestMatchers(HttpMethod.POST, "/api/analytics/events/**", "/api/v1/analytics/events/**").permitAll()
 
+                        // Public Subscription Plans
+                        .requestMatchers(HttpMethod.GET, "/api/subscriptions/**", "/api/v1/subscriptions/**").permitAll()
+
                         // System Health
                         .requestMatchers("/api/health/**").permitAll()
 

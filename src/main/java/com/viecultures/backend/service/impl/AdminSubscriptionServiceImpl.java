@@ -127,6 +127,19 @@ public class AdminSubscriptionServiceImpl implements AdminSubscriptionService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<SubscriptionPlanDto> getActivePlans() {
+        try {
+            return planRepository.findByIsActiveTrueOrderBySortOrderAsc().stream()
+                    .map(this::mapToPlanDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("[AdminSubscriptionService] Lỗi khi lấy danh sách gói cước hoạt động: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<SubscriptionPlanDto> getPlans() {
         try {
             return planRepository.findAllByOrderBySortOrderAsc().stream()

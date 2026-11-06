@@ -14,5 +14,7 @@ public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPl
 
     List<SubscriptionPlan> findAllByOrderBySortOrderAsc();
 
+    List<SubscriptionPlan> findByIsActiveTrueOrderBySortOrderAsc();
+
     boolean existsByCode(String code);
 }

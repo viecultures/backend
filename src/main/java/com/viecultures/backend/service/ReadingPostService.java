@@ -12,6 +12,7 @@ import com.viecultures.backend.entity.ReadingPost;
 import com.viecultures.backend.entity.VocabItem;
 import com.viecultures.backend.repository.LearningJourneyRepository;
 import com.viecultures.backend.repository.ParagraphPairRepository;
+import com.viecultures.backend.repository.QuizQuestionRepository;
 import com.viecultures.backend.repository.ReadingPostRepository;
 import com.viecultures.backend.repository.VocabItemRepository;
 import jakarta.persistence.criteria.Predicate;
@@ -33,14 +34,20 @@ public class ReadingPostService {
     private final LearningJourneyRepository journeyRepository;
     private final ParagraphPairRepository paragraphPairRepository;
     private final VocabItemRepository vocabItemRepository;
+    private final QuizQuestionRepository quizQuestionRepository;
 
     @Transactional(readOnly = true)
     public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query, String region, String topicGroup) {
-        return getPosts(topic, level, query, region, topicGroup, null, null, null);
+        return getPosts(topic, level, query, region, topicGroup, null, null, null, false);
     }
 
     @Transactional(readOnly = true)
     public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query, String region, String topicGroup, Boolean standalone, String journeyId, String provinceId) {
+        return getPosts(topic, level, query, region, topicGroup, standalone, journeyId, provinceId, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query, String region, String topicGroup, Boolean standalone, String journeyId, String provinceId, Boolean includeDetails) {
         Specification<ReadingPost> spec = (root, q, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -84,8 +91,22 @@ public class ReadingPostService {
         };
 
         List<ReadingPost> posts = readingPostRepository.findAll(spec);
+        if (posts.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        if (Boolean.TRUE.equals(includeDetails)) {
+            return posts.stream()
+                    .map(p -> toResponse(p, true))
+                    .collect(Collectors.toList());
+        }
+
+        List<String> postIds = posts.stream().map(ReadingPost::getId).collect(Collectors.toList());
+        Map<String, Integer> vocabCounts = getVocabCounts(postIds);
+        Map<String, Integer> questionCounts = getQuestionCounts(postIds);
+
         return posts.stream()
-                .map(p -> toResponse(p, false))
+                .map(p -> toResponse(p, false, vocabCounts.getOrDefault(p.getId(), 0), questionCounts.getOrDefault(p.getId(), 0)))
                 .collect(Collectors.toList());
     }
 
@@ -280,9 +301,12 @@ public class ReadingPostService {
     }
 
     public ReadingPostResponse toResponse(ReadingPost post, boolean includeDetails) {
-        int vocabCount = post.getVocabularies() != null ? post.getVocabularies().size() : 0;
-        int questionCount = post.getQuestions() != null ? post.getQuestions().size() : 0;
+        int vocabCount = (post.getVocabularies() != null) ? post.getVocabularies().size() : 0;
+        int questionCount = (post.getQuestions() != null) ? post.getQuestions().size() : 0;
+        return toResponse(post, includeDetails, vocabCount, questionCount);
+    }
 
+    public ReadingPostResponse toResponse(ReadingPost post, boolean includeDetails, int vocabCount, int questionCount) {
         ReadingPostResponse.ReadingPostResponseBuilder builder = ReadingPostResponse.builder()
                 .id(post.getId())
                 .topicGroup(post.getTopicGroup())
@@ -313,36 +337,36 @@ public class ReadingPostService {
             builder.journeyTitleEn(post.getJourney().getTitleEn());
         }
 
-        if (post.getVocabularies() != null) {
-            builder.vocabularies(post.getVocabularies().stream()
-                    .map(v -> ReadingPostResponse.VocabItemDto.builder()
-                            .id(v.getId())
-                            .word(v.getWord())
-                            .ipa(v.getIpa())
-                            .pos(v.getPos())
-                            .viMeaning(v.getViMeaning())
-                            .contextSentence(v.getContextSentence())
-                            .audioUrl(v.getAudioUrl())
-                            .level(v.getLevel())
-                            .usageNote(v.getUsageNote())
-                            .build())
-                    .collect(Collectors.toList()));
-        }
-
-        if (post.getQuestions() != null) {
-            builder.questions(post.getQuestions().stream()
-                    .map(q -> ReadingPostResponse.QuizQuestionDto.builder()
-                            .id(q.getId())
-                            .orderIndex(q.getOrderIndex())
-                            .question(q.getQuestion())
-                            .options(q.getOptions())
-                            .correctKey(q.getCorrectKey())
-                            .explanation(q.getExplanation())
-                            .build())
-                    .collect(Collectors.toList()));
-        }
-
         if (includeDetails) {
+            if (post.getVocabularies() != null) {
+                builder.vocabularies(post.getVocabularies().stream()
+                        .map(v -> ReadingPostResponse.VocabItemDto.builder()
+                                .id(v.getId())
+                                .word(v.getWord())
+                                .ipa(v.getIpa())
+                                .pos(v.getPos())
+                                .viMeaning(v.getViMeaning())
+                                .contextSentence(v.getContextSentence())
+                                .audioUrl(v.getAudioUrl())
+                                .level(v.getLevel())
+                                .usageNote(v.getUsageNote())
+                                .build())
+                        .collect(Collectors.toList()));
+            }
+
+            if (post.getQuestions() != null) {
+                builder.questions(post.getQuestions().stream()
+                        .map(q -> ReadingPostResponse.QuizQuestionDto.builder()
+                                .id(q.getId())
+                                .orderIndex(q.getOrderIndex())
+                                .question(q.getQuestion())
+                                .options(q.getOptions())
+                                .correctKey(q.getCorrectKey())
+                                .explanation(q.getExplanation())
+                                .build())
+                        .collect(Collectors.toList()));
+            }
+
             if (post.getParagraphs() != null) {
                 builder.paragraphs(post.getParagraphs().stream()
                         .map(p -> ReadingPostResponse.ParagraphPairDto.builder()
@@ -360,6 +384,45 @@ public class ReadingPostService {
         return builder.build();
     }
 
+    private Map<String, Integer> getAllVocabCounts() {
+        List<Object[]> results = vocabItemRepository.countVocabulariesGroupedByPostId();
+        Map<String, Integer> map = new HashMap<>(results.size());
+        for (Object[] row : results) {
+            String postId = (String) row[0];
+            Number count = (Number) row[1];
+            map.put(postId, count != null ? count.intValue() : 0);
+        }
+        return map;
+    }
+
+    private Map<String, Integer> getVocabCounts(Collection<String> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> results = vocabItemRepository.countVocabulariesByPostIds(postIds);
+        Map<String, Integer> map = new HashMap<>(results.size());
+        for (Object[] row : results) {
+            String postId = (String) row[0];
+            Number count = (Number) row[1];
+            map.put(postId, count != null ? count.intValue() : 0);
+        }
+        return map;
+    }
+
+    private Map<String, Integer> getQuestionCounts(Collection<String> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Object[]> results = quizQuestionRepository.countQuestionsByPostIds(postIds);
+        Map<String, Integer> map = new HashMap<>(results.size());
+        for (Object[] row : results) {
+            String postId = (String) row[0];
+            Number count = (Number) row[1];
+            map.put(postId, count != null ? count.intValue() : 0);
+        }
+        return map;
+    }
+
     @Transactional(readOnly = true)
     public CatalogResponse getCatalog(String topic, String level, String query, String region, String sortBy, Integer page, Integer size) {
         return getCatalog(topic, level, query, region, sortBy, null, page, size);
@@ -367,14 +430,14 @@ public class ReadingPostService {
 
     @Transactional(readOnly = true)
     public CatalogResponse getCatalog(String topic, String level, String query, String region, String sortBy, Boolean standalone, Integer page, Integer size) {
-        List<ReadingPost> allPosts = readingPostRepository.findAll();
-        if (Boolean.TRUE.equals(standalone)) {
-            allPosts = allPosts.stream().filter(p -> p.getJourney() == null).collect(Collectors.toList());
-        }
+        List<CatalogPostView> allPosts = readingPostRepository.findCatalogPostViews(standalone);
+
+        // Single query to count vocabularies per post - eliminates N+1 queries
+        Map<String, Integer> vocabCounts = getAllVocabCounts();
 
         // 1. Group posts by topicGroup or individual id
-        Map<String, List<ReadingPost>> groups = new LinkedHashMap<>();
-        for (ReadingPost post : allPosts) {
+        Map<String, List<CatalogPostView>> groups = new LinkedHashMap<>();
+        for (CatalogPostView post : allPosts) {
             String key = (post.getTopicGroup() != null && !post.getTopicGroup().isBlank())
                     ? "group:" + post.getTopicGroup().trim().toLowerCase()
                     : "id:" + post.getId();
@@ -385,12 +448,12 @@ public class ReadingPostService {
         List<CatalogLessonDto> lessonList = new ArrayList<>();
         Map<String, Long> topicCounts = new HashMap<>();
 
-        for (Map.Entry<String, List<ReadingPost>> entry : groups.entrySet()) {
-            List<ReadingPost> postGroup = entry.getValue();
+        for (Map.Entry<String, List<CatalogPostView>> entry : groups.entrySet()) {
+            List<CatalogPostView> postGroup = entry.getValue();
             if (postGroup.isEmpty()) continue;
 
             // Pick representative post (prefer Level 2/B1/B2, else first)
-            ReadingPost primary = postGroup.stream()
+            CatalogPostView primary = postGroup.stream()
                     .filter(p -> p.getLevel() == CefrLevel.B1 || p.getLevel() == CefrLevel.B2)
                     .findFirst()
                     .orElse(postGroup.get(0));
@@ -407,14 +470,14 @@ public class ReadingPostService {
             int totalLikes = 0;
             boolean isFeatured = false;
 
-            for (ReadingPost p : postGroup) {
+            for (CatalogPostView p : postGroup) {
                 String levelType = mapCefrToLevelType(p.getLevel());
                 if (!availableLevels.contains(levelType)) {
                     availableLevels.add(levelType);
                 }
                 postIds.put(levelType, p.getId());
 
-                int vCount = (p.getVocabularies() != null) ? p.getVocabularies().size() : 0;
+                int vCount = vocabCounts.getOrDefault(p.getId(), 0);
                 if (vCount > maxVocabCount) maxVocabCount = vCount;
 
                 if (p.getTotalReads() != null) totalReads += p.getTotalReads();
@@ -422,6 +485,8 @@ public class ReadingPostService {
                 if (Boolean.TRUE.equals(p.getFeatured())) isFeatured = true;
 
                 levelDetails.put(levelType, CatalogLessonDto.LevelDetailDto.builder()
+                        .postId(p.getId())
+                        .cefrLevel(p.getLevel() != null ? p.getLevel().name() : null)
                         .readTime(p.getReadTime() != null ? p.getReadTime() : "4 min read")
                         .vocabCount(vCount)
                         .wordCount(p.getWordCount() != null ? p.getWordCount() : 350)
@@ -437,8 +502,8 @@ public class ReadingPostService {
 
             CatalogLessonDto dto = CatalogLessonDto.builder()
                     .id(primary.getId())
-                    .journeyId(primary.getJourney() != null ? primary.getJourney().getId() : null)
-                    .isStandalone(primary.getJourney() == null)
+                    .journeyId(primary.getJourneyId())
+                    .isStandalone(primary.getJourneyId() == null)
                     .postIds(postIds)
                     .topicGroup(primary.getTopicGroup())
                     .titleEn(primary.getTitleEn())
@@ -473,8 +538,10 @@ public class ReadingPostService {
 
         // 4. Filter by level if requested and not "All"
         if (level != null && !level.isBlank() && !level.equalsIgnoreCase("All")) {
+            String targetLevel = level.trim();
+            String mappedLevel = mapCefrStringToLevelType(targetLevel);
             lessonList = lessonList.stream()
-                    .filter(l -> l.getAvailableLevels().contains(level.trim()))
+                    .filter(l -> l.getAvailableLevels().contains(targetLevel) || l.getAvailableLevels().contains(mappedLevel))
                     .collect(Collectors.toList());
         }
 
@@ -508,15 +575,17 @@ public class ReadingPostService {
         } else {
             // "recent" default
             lessonList.sort((a, b) -> {
-                if (a.getCreatedAt() == null || b.getCreatedAt() == null) return 0;
+                if (a.getCreatedAt() == null && b.getCreatedAt() == null) return 0;
+                if (a.getCreatedAt() == null) return 1;
+                if (b.getCreatedAt() == null) return -1;
                 return b.getCreatedAt().compareTo(a.getCreatedAt());
             });
         }
 
         int totalElements = lessonList.size();
-        int pageSize = (size != null && size > 0) ? size : (totalElements > 0 ? totalElements : 12);
+        int pageSize = (size != null && size > 0) ? size : 12;
         int pageIndex = (page != null && page >= 0) ? page : 0;
-        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+        int totalPages = pageSize > 0 ? (int) Math.ceil((double) totalElements / pageSize) : 0;
 
         List<CatalogLessonDto> pagedItems;
         int start = pageIndex * pageSize;
@@ -535,6 +604,15 @@ public class ReadingPostService {
                 .totalPages(totalPages)
                 .topicCounts(topicCounts)
                 .build();
+    }
+
+    private String mapCefrStringToLevelType(String cefr) {
+        if (cefr == null) return "Level 2";
+        String upper = cefr.trim().toUpperCase();
+        if (upper.startsWith("A")) return "Level 1";
+        if (upper.startsWith("B")) return "Level 2";
+        if (upper.startsWith("C")) return "Level 3";
+        return upper;
     }
 
     private String normalizeCategory(String topic) {
