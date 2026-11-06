@@ -16,6 +16,8 @@ public interface AdminSubscriptionService {
 
     List<SubscriptionPlanDto> getPlans();
 
+    List<SubscriptionPlanDto> getActivePlans();
+
     SubscriptionPlanDto savePlan(SubscriptionPlanDto planDto);
 
     SubscriptionPlanDto togglePlanStatus(String id);

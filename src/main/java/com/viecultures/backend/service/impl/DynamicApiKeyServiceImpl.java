@@ -24,7 +24,7 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
     public static final String KEY_AZURE_SPEECH_REGION = "azure_speech_region";
     public static final String KEY_ACTIVE_TTS_PROVIDER = "active_tts_provider";
 
-    public static final String DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+    public static final String DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
     public static final String DEFAULT_AZURE_REGION = "southeastasia";
     public static final String DEFAULT_TTS_PROVIDER = "azure";
 
@@ -209,6 +209,27 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
         LocalDateTime now = LocalDateTime.now();
 
         for (AiServiceConfig config : configs) {
+            if ("COOLDOWN".equalsIgnoreCase(config.getStatus())) {
+                if (config.getCooldownUntil() != null && now.isAfter(config.getCooldownUntil())) {
+                    config.setStatus("HEALTHY");
+                    config.setCooldownUntil(null);
+                    configRepository.save(config);
+                    return Optional.of(config);
+                }
+                continue;
+            }
+
+            if ("ERROR".equalsIgnoreCase(config.getStatus())) {
+                continue;
+            }
+
+            return Optional.of(config);
+        }
+
+        List<AiServiceConfig> providerConfigs = configRepository
+                .findByProviderAndActiveTrueOrderByPriorityAsc(safeProvider);
+
+        for (AiServiceConfig config : providerConfigs) {
             if ("COOLDOWN".equalsIgnoreCase(config.getStatus())) {
                 if (config.getCooldownUntil() != null && now.isAfter(config.getCooldownUntil())) {
                     config.setStatus("HEALTHY");

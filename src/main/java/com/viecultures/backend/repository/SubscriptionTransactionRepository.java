@@ -18,6 +18,8 @@ public interface SubscriptionTransactionRepository extends JpaRepository<Subscri
 
     List<SubscriptionTransaction> findByStatusOrderByCreatedAtDesc(String status);
 
+    List<SubscriptionTransaction> findByUserIdOrUserEmailOrderByCreatedAtDesc(String userId, String userEmail);
+
     long countByStatus(String status);
 
     @Query("SELECT COALESCE(SUM(t.amountVnd), 0) FROM SubscriptionTransaction t WHERE t.status = 'APPROVED'")

@@ -86,5 +86,71 @@
     "description": "Follow the journey of the iconic Vietnamese baguette from French culinary influence to a beloved global street food phenomenon.",
     "imageUrl": "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=1200&q=80",
     "status": "draft"
+  },
+  {
+    "id": "goi-ca-nhech",
+    "titleEn": "Gỏi Cá Nhệch",
+    "titleVi": "GỎI CÁ NHỆCH",
+    "theme": "cuisine",
+    "provinceId": "ninh-binh",
+    "region": "north",
+    "description": "Khám phá hành trình văn hóa ẩm thực GỎI CÁ NHỆCH.",
+    "imageUrl": "/images/series/goi-ca-nhech.webp",
+    "status": "published"
+  },
+  {
+    "id": "be-chao",
+    "titleEn": "Bê Chao",
+    "titleVi": "BÊ CHAO",
+    "theme": "cuisine",
+    "provinceId": "son-la",
+    "region": "north",
+    "description": "Khám phá hành trình văn hóa ẩm thực BÊ CHAO.",
+    "imageUrl": "/images/series/be-chao.webp",
+    "status": "published"
+  },
+  {
+    "id": "xoi-nep-nuong",
+    "titleEn": "Xôi Nếp Nương",
+    "titleVi": "XÔI NẾP NƯƠNG",
+    "theme": "cuisine",
+    "provinceId": "dien-bien",
+    "region": "north",
+    "description": "Khám phá hành trình văn hóa ẩm thực XÔI NẾP NƯƠNG.",
+    "imageUrl": "/images/series/xoi-nep-nuong.webp",
+    "status": "published"
+  },
+  {
+    "id": "banh-chung-lang-dam-ha-nam",
+    "titleEn": "Bánh Chưng Làng Đầm, Hà Nam",
+    "titleVi": "Bánh chưng Làng Đầm, Hà Nam",
+    "theme": "cuisine",
+    "provinceId": "ha-nam",
+    "region": "north",
+    "description": "Chuyên đề di sản ẩm thực truyền thống: Bánh chưng Làng Đầm, Hà Nam.",
+    "imageUrl": "/images/series/banh-chung-lang-dam-ha-nam.webp",
+    "status": "published"
+  },
+  {
+    "id": "khau-nhuc-lang-son",
+    "titleEn": "Khâu Nhục Lạng Sơn",
+    "titleVi": "Khâu nhục lạng sơn",
+    "theme": "cuisine",
+    "provinceId": "lang-son",
+    "region": "north",
+    "description": "Chuyên đề di sản ẩm thực truyền thống: Khâu nhục lạng sơn.",
+    "imageUrl": "/images/series/khau-nhuc-lang-son.webp",
+    "status": "published"
+  },
+  {
+    "id": "thang-co",
+    "titleEn": "Thắng Cố",
+    "titleVi": "Thắng cố",
+    "theme": "cuisine",
+    "provinceId": "lao-cai",
+    "region": "north",
+    "description": "Chuyên đề di sản ẩm thực truyền thống: Thắng cố.",
+    "imageUrl": "/images/series/thang-co.webp",
+    "status": "published"
   }
 ]

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "pho",
+    "titleEn": "Pho in Hanoi",
+    "titleVi": "Phở Hà Nội",
+    "theme": "cuisine",
+    "provinceId": "ha-noi",
+    "region": "north",
+    "description": "Explore the culinary science, morning rituals, and regional diversity of Vietnam’s iconic noodle soup.",
+    "imageUrl": "/images/series/pho-hanoi.webp",
+    "status": "published"
+  },
+  {
+    "id": "bun-cha",
+    "titleEn": "Bún Chả in Hanoi",
+    "titleVi": "Bún Chả Hà Nội",
+    "theme": "cuisine",
+    "provinceId": "ha-noi",
+    "region": "north",
+    "description": "Discover the charcoal grilling secrets, lunchtime sidewalk culture, and refined elegance of Hanoi’s iconic bún chả.",
+    "imageUrl": "/images/series/bun-cha.webp",
+    "status": "published"
+  },
+  {
+    "id": "cha-ca-la-vong",
+    "titleEn": "Chả Cá Lã Vọng in Hanoi",
+    "titleVi": "Chả Cá Lã Vọng Hà Nội",
+    "theme": "cuisine",
+    "provinceId": "ha-noi",
+    "region": "north",
+    "description": "Explore the 1871 origin, interactive tabletop cooking, dill-turmeric pairing, and five elements balance of Hanoi’s iconic fish specialty.",
+    "imageUrl": "/images/series/cha-ca-la-vong.webp",
+    "status": "published"
+  },
+  {
+    "id": "ca-kho-vu-dai",
+    "titleEn": "Vũ Đại Braised Fish",
+    "titleVi": "Cá Kho Làng Vũ Đại",
+    "theme": "cuisine",
+    "provinceId": "ninh-binh",
+    "region": "north",
+    "description": "Discover the 16-hour longan wood simmering, literary roots in Nam Cao’s stories, and natural flavor layering of Hà Nam’s legendary braised carp.",
+    "imageUrl": "/images/series/ca-kho-vu-dai.webp",
+    "status": "published"
+  },
+  {
+    "id": "com-chay-ninh-binh",
+    "titleEn": "Cơm Cháy in Ninh Bình",
+    "titleVi": "Cơm Cháy Ninh Bình",
+    "theme": "cuisine",
+    "provinceId": "ninh-binh",
+    "region": "north",
+    "description": "Discover the 19th-century origin of Đinh Hoàng Thăng, cast-iron pot crust techniques, and the dramatic sizzle of mountain goat sauce over crispy rice.",
+    "imageUrl": "/images/series/com-chay-ninh-binh.webp",
+    "status": "published"
+  },
+  {
+    "id": "banh-cay-thai-binh",
+    "titleEn": "Bánh Cáy in Thái Bình",
+    "titleVi": "Bánh Cáy Làng Nguyễn",
+    "theme": "cuisine",
+    "provinceId": "hung-yen",
+    "region": "north",
+    "description": "Explore Lady Nguyễn Thị Tần’s royal tribute, natural coloring with gac and gardenia, and the comforting winter ritual of hot tea with crispy sweet bánh cáy.",
+    "imageUrl": "/images/series/banh-cay-thai-binh.webp",
+    "status": "published"
+  },
+  {
+    "id": "hue-citadel",
+    "titleEn": "Imperial Citadel of Hue",
+    "titleVi": "Đại nội Kinh thành Huế",
+    "theme": "places",
+    "provinceId": "thua-thien-hue",
+    "region": "central",
+    "description": "Walk through the ancient royal capital on the banks of the Perfume River. Learn how to describe palace gates, courtyards and royal traditions in clear English.",
+    "imageUrl": "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1200&q=80",
+    "status": "draft"
+  },
+  {
+    "id": "saigon-banh-mi",
+    "titleEn": "Bánh Mì: Street Culture in Saigon",
+    "titleVi": "Bánh Mì: Văn hóa đường phố Sài Gòn",
+    "theme": "cuisine",
+    "provinceId": "ho-chi-minh",
+    "region": "south",
+    "description": "Follow the journey of the iconic Vietnamese baguette from French culinary influence to a beloved global street food phenomenon.",
+    "imageUrl": "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=1200&q=80",
+    "status": "draft"
+  }
+]

@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
@@ -325,6 +326,38 @@ public class UserActivityLogServiceImpl implements UserActivityLogService {
         } catch (Exception e) {
             log.error("Could not parse date string: {}. Error: {}", text, e.getMessage());
             return null;
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logAdminAction(
+            String userId,
+            String userEmail,
+            String action,
+            String entity,
+            String path,
+            String payloadJson,
+            String ipAddress,
+            String userAgent
+    ) {
+        try {
+            UserActivityLog logEntry = UserActivityLog.builder()
+                    .userId(userId)
+                    .userEmail(userEmail)
+                    .eventType(StringUtils.hasText(action) ? action.trim().toUpperCase() : "ADMIN_ACTION")
+                    .eventCategory("ADMIN_AUDIT")
+                    .path(truncate(path, 1000))
+                    .payload(payloadJson)
+                    .ipAddress(truncate(ipAddress, 100))
+                    .userAgent(truncate(userAgent, 1000))
+                    .build();
+
+            activityLogRepository.save(logEntry);
+            log.info("[ADMIN_AUDIT] Successfully logged action='{}', entity='{}', user='{}', path='{}'",
+                    action, entity, userEmail, path);
+        } catch (Exception e) {
+            log.error("[ADMIN_AUDIT] Failed to persist audit log: {}", e.getMessage(), e);
         }
     }
 

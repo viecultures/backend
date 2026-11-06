@@ -36,14 +36,17 @@ public class VoiceController {
     @GetMapping("/live-session")
     public ResponseEntity<ApiResponse<LiveSessionResponse>> getLiveSession(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            log.warn("[VoiceController] getLiveSession rejected: Nguoi dung chua dang nhap");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Vui lòng đăng nhập để sử dụng tính năng Voice Chat", "AUTH_REQUIRED"));
         }
         String apiKey = geminiVoiceService.getGeminiApiKey();
         if (apiKey == null || apiKey.trim().isEmpty()) {
+            log.error("[VoiceController] getLiveSession failed: Khong tim thay Gemini API key hoat dong trong co so du lieu");
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(ApiResponse.error("Dịch vụ AI Voice chưa được cấu hình key", "CONFIG_MISSING"));
         }
+        log.info("[VoiceController] getLiveSession success: Cap live session thanh cong cho user={}", authentication.getName());
         return ResponseEntity.ok(ApiResponse.ok(
                 LiveSessionResponse.builder()
                         .apiKey(apiKey)
