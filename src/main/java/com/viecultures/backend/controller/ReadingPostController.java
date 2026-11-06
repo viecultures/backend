@@ -35,13 +35,14 @@ public class ReadingPostController {
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size) {
-        CatalogResponse response = readingPostService.getCatalog(topic, level, query, region, sortBy, page, size);
+            @RequestParam(required = false) Boolean standalone,
+            @RequestParam(required = false, defaultValue = "0") Integer page,
+            @RequestParam(required = false, defaultValue = "12") Integer size) {
+        CatalogResponse response = readingPostService.getCatalog(topic, level, query, region, sortBy, standalone, page, size);
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "Lấy danh sách bài đọc", description = "Hỗ trợ lọc theo chủ đề (topic), vùng miền (region), nhóm bài (topicGroup), trình độ CEFR (level), bài đọc độc lập (standalone), hành trình (journeyId) và tìm kiếm tự do theo từ khóa")
+    @Operation(summary = "Lấy danh sách bài đọc", description = "Hỗ trợ lọc theo chủ đề (topic), vùng miền (region), nhóm bài (topicGroup), trình độ CEFR (level), bài đọc độc lập (standalone), hành trình (journeyId), tìm kiếm tự do theo từ khóa và tùy chọn nạp chi tiết từ vựng/câu hỏi (includeDetails)")
     @GetMapping
     public ResponseEntity<List<ReadingPostResponse>> getPosts(
             @RequestParam(required = false) String topic,
@@ -51,8 +52,9 @@ public class ReadingPostController {
             @RequestParam(required = false) Boolean standalone,
             @RequestParam(required = false) String journeyId,
             @RequestParam(required = false) String provinceId,
-            @RequestParam(required = false) String query) {
-        List<ReadingPostResponse> posts = readingPostService.getPosts(topic, level, query, region, topicGroup, standalone, journeyId, provinceId);
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false, defaultValue = "false") Boolean includeDetails) {
+        List<ReadingPostResponse> posts = readingPostService.getPosts(topic, level, query, region, topicGroup, standalone, journeyId, provinceId, includeDetails);
         return ResponseEntity.ok(posts);
     }
 

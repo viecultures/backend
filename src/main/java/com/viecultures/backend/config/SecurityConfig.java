@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/posts/*/read").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/journeys/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/cuisine-series/**").permitAll()
 
                         // Vocabulary & Dictionary Lookups & Progress Persistence
                         .requestMatchers(HttpMethod.GET, "/api/vocabularies/**").permitAll()

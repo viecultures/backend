@@ -25,6 +25,7 @@ public class GeminiVoiceService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final DynamicApiKeyService dynamicApiKeyService;
 
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
@@ -45,13 +46,28 @@ public class GeminiVoiceService {
             "gemini-3.1-flash-tts-preview",
             "gemini-3.8-flash");
 
-    public GeminiVoiceService(RestTemplate restTemplate, ObjectMapper objectMapper) {
+    public GeminiVoiceService(RestTemplate restTemplate, ObjectMapper objectMapper, DynamicApiKeyService dynamicApiKeyService) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.dynamicApiKeyService = dynamicApiKeyService;
     }
 
     public String getGeminiApiKey() {
-        return geminiApiKey;
+        if (dynamicApiKeyService != null) {
+            String dbKey = dynamicApiKeyService.getActiveKey("GEMINI", "LIVE");
+            if (dbKey != null && !dbKey.isBlank()) {
+                return dbKey.trim();
+            }
+            dbKey = dynamicApiKeyService.getActiveKey("GEMINI", "CHAT");
+            if (dbKey != null && !dbKey.isBlank()) {
+                return dbKey.trim();
+            }
+            dbKey = dynamicApiKeyService.getActiveKey("GEMINI", "TTS");
+            if (dbKey != null && !dbKey.isBlank()) {
+                return dbKey.trim();
+            }
+        }
+        return (geminiApiKey != null && !geminiApiKey.isBlank()) ? geminiApiKey.trim() : null;
     }
 
     /**
@@ -202,7 +218,11 @@ public class GeminiVoiceService {
                 "contents", List.of(contentItem),
                 "generationConfig", generationConfig);
 
-        String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, geminiApiKey);
+        String effectiveApiKey = getGeminiApiKey();
+        if (effectiveApiKey == null || effectiveApiKey.isBlank()) {
+            throw new IllegalStateException("Không tìm thấy Google Gemini API Key trong hệ thống (database hoặc cấu hình).");
+        }
+        String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, effectiveApiKey);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

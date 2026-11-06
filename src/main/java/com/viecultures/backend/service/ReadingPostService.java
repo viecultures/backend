@@ -1,6 +1,7 @@
 package com.viecultures.backend.service;
 
 import com.viecultures.backend.dto.CatalogLessonDto;
+import com.viecultures.backend.dto.CatalogPostView;
 import com.viecultures.backend.dto.CatalogResponse;
 import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
