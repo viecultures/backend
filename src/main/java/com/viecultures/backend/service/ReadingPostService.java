@@ -361,7 +361,15 @@ public class ReadingPostService {
 
     @Transactional(readOnly = true)
     public CatalogResponse getCatalog(String topic, String level, String query, String region, String sortBy, Integer page, Integer size) {
+        return getCatalog(topic, level, query, region, sortBy, null, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public CatalogResponse getCatalog(String topic, String level, String query, String region, String sortBy, Boolean standalone, Integer page, Integer size) {
         List<ReadingPost> allPosts = readingPostRepository.findAll();
+        if (Boolean.TRUE.equals(standalone)) {
+            allPosts = allPosts.stream().filter(p -> p.getJourney() == null).collect(Collectors.toList());
+        }
 
         // 1. Group posts by topicGroup or individual id
         Map<String, List<ReadingPost>> groups = new LinkedHashMap<>();
@@ -428,6 +436,8 @@ public class ReadingPostService {
 
             CatalogLessonDto dto = CatalogLessonDto.builder()
                     .id(primary.getId())
+                    .journeyId(primary.getJourney() != null ? primary.getJourney().getId() : null)
+                    .isStandalone(primary.getJourney() == null)
                     .postIds(postIds)
                     .topicGroup(primary.getTopicGroup())
                     .titleEn(primary.getTitleEn())

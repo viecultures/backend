@@ -11,10 +11,21 @@ import org.springframework.web.multipart.MultipartFile;
 public interface TwoPassSttService {
 
     /**
-     * Nhận dạng và làm sạch giọng nói từ tệp âm thanh tải lên.
+     * Nhận dạng và làm sạch giọng nói từ tệp âm thanh tải lên với chế độ mặc định (smartCleanup = true).
      *
      * @param file tệp âm thanh (WAV hoặc WebM)
      * @return TwoPassSttResponse chứa rawText, cleanedText, corrections và latency metrics
      */
-    TwoPassSttResponse transcribe(MultipartFile file);
+    default TwoPassSttResponse transcribe(MultipartFile file) {
+        return transcribe(file, true);
+    }
+
+    /**
+     * Nhận dạng giọng nói với tùy chọn làm sạch thông minh (smartCleanup).
+     *
+     * @param file tệp âm thanh (WAV hoặc WebM)
+     * @param smartCleanup true: hội thoại thông minh (2-Pass), false: luyện phát âm (verbatim 100%)
+     * @return TwoPassSttResponse chứa rawText, cleanedText, corrections và latency metrics
+     */
+    TwoPassSttResponse transcribe(MultipartFile file, boolean smartCleanup);
 }

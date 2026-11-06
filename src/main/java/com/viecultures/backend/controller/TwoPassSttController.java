@@ -33,7 +33,7 @@ public class TwoPassSttController {
 
     @Operation(
             summary = "Nhận dạng giọng nói Two-Pass STT",
-            description = "Giai đoạn 1 (Acoustic Transcription) nhận dạng âm thanh thô verbatim. Giai đoạn 2 (Semantic Refinement) chuẩn hóa văn bản, loại bỏ từ đệm và sửa lỗi ngữ cảnh."
+            description = "Giai đoạn 1 (Acoustic Transcription) nhận dạng âm thanh thô verbatim. Giai đoạn 2 (Semantic Refinement) chuẩn hóa văn bản, loại bỏ từ đệm và sửa lỗi ngữ cảnh khi smartCleanup = true."
     )
     @PostMapping(value = "/transcribe-two-pass", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<TwoPassSttResponse>> transcribeTwoPass(
@@ -42,7 +42,11 @@ public class TwoPassSttController {
                     content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
                             schema = @Schema(type = "string", format = "binary"))
             )
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Chế độ làm sạch thông minh: true (hội thoại thông minh - lọc từ đệm), false (luyện phát âm - verbatim 100%)")
+            @RequestParam(value = "smartCleanup", defaultValue = "true", required = false) boolean smartCleanup,
+            @Parameter(description = "Tùy chọn chế độ nhận dạng: 'smart' hoặc 'verbatim'")
+            @RequestParam(value = "mode", required = false) String mode) {
 
         if (file == null || file.isEmpty()) {
             return ResponseEntity.badRequest().body(
@@ -50,8 +54,18 @@ public class TwoPassSttController {
             );
         }
 
+        boolean effectiveSmartCleanup = smartCleanup;
+        if (mode != null && !mode.isBlank()) {
+            String trimmedMode = mode.trim();
+            if ("verbatim".equalsIgnoreCase(trimmedMode)) {
+                effectiveSmartCleanup = false;
+            } else if ("smart".equalsIgnoreCase(trimmedMode)) {
+                effectiveSmartCleanup = true;
+            }
+        }
+
         try {
-            TwoPassSttResponse response = twoPassSttService.transcribe(file);
+            TwoPassSttResponse response = twoPassSttService.transcribe(file, effectiveSmartCleanup);
             return ResponseEntity.ok(ApiResponse.ok(response, "Nhận dạng giọng nói thành công"));
         } catch (IllegalArgumentException ex) {
             log.warn("Dữ liệu đầu vào không hợp lệ: {}", ex.getMessage());

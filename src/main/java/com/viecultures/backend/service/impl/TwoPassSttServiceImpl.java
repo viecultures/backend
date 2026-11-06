@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.viecultures.backend.dto.SttCorrectionDetail;
 import com.viecultures.backend.dto.TwoPassSttResponse;
+import com.viecultures.backend.entity.AiServiceConfig;
 import com.viecultures.backend.service.AiCostTrackingService;
 import com.viecultures.backend.service.DynamicApiKeyService;
 import com.viecultures.backend.service.TwoPassSttService;
@@ -32,8 +33,8 @@ import java.util.regex.Pattern;
 
 /**
  * Triển khai dịch vụ Two-Pass Speech-to-Text:
- * - Pass 1: Nhận dạng âm học thô (Acoustic Transcription) qua Gemini Multimodal.
- * - Pass 2: Tinh chỉnh ngữ nghĩa (Semantic Refinement & Cleanup) loại bỏ filler words, sửa false starts.
+ * - Pass 1: Nhận dạng âm học thô (Acoustic Transcription) qua Gemini Multimodal (mô hình chính: gemini-3.5-transcribe).
+ * - Pass 2: Tinh chỉnh ngữ nghĩa (Semantic Refinement & Cleanup) loại bỏ filler words, sửa false starts khi smartCleanup = true.
  */
 @Slf4j
 @Service
@@ -56,10 +57,10 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
     @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models}")
     private String geminiApiUrl;
 
-    private static final List<String> PASS1_CANDIDATE_MODELS = List.of(
+    private static final List<String> DEFAULT_PASS1_MODELS = List.of(
+            "gemini-3.5-transcribe",
             "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-flash-latest"
+            "gemini-1.5-flash"
     );
 
     private static final List<String> PASS2_CANDIDATE_MODELS = List.of(
@@ -73,6 +74,7 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                     + "STRICT RULE: This platform strictly supports ONLY English and Vietnamese. "
                     + "Output ONLY the exact spoken English words (or Vietnamese if spoken). "
                     + "Do NOT translate, do NOT output or guess words in any other foreign languages (e.g., Chinese, Japanese, Korean, Spanish, French). "
+                    + "Do NOT omit filler words, stutters, repetitions, or grammatical errors; transcribe every single utterance verbatim. "
                     + "If the audio is silent or unintelligible noise, respond with EMPTY_SPEECH.";
 
     private static final String PASS2_SYSTEM_PROMPT =
@@ -91,6 +93,11 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
 
     @Override
     public TwoPassSttResponse transcribe(MultipartFile file) {
+        return transcribe(file, true);
+    }
+
+    @Override
+    public TwoPassSttResponse transcribe(MultipartFile file, boolean smartCleanup) {
         long overallStartTime = System.currentTimeMillis();
 
         if (file == null || file.isEmpty()) {
@@ -120,7 +127,7 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
         String apiKey = resolveApiKey();
         Long configId = dynamicApiKeyService != null ? dynamicApiKeyService.getActiveConfigId("GEMINI", "STT") : null;
 
-        // --- PASS 1: Acoustic Transcription ---
+        // --- PASS 1: Acoustic Transcription (Nhận dạng âm học thô verbatim) ---
         long pass1Start = System.currentTimeMillis();
         String rawText = executePass1(base64Audio, mimeType, apiKey, configId);
         long pass1Latency = System.currentTimeMillis() - pass1Start;
@@ -142,7 +149,23 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                     .build();
         }
 
-        // --- PASS 2: Semantic Refinement & Cleanup ---
+        // Chế độ luyện phát âm (smartCleanup = false):
+        // Trả về chính xác 100% từng từ thô mà học viên đã nói (verbatim), giữ nguyên lỗi sai và từ đệm
+        if (!smartCleanup) {
+            long totalLatency = System.currentTimeMillis() - overallStartTime;
+            log.info("Chế độ verbatim (smartCleanup=false): Giữ nguyên 100% bản ghi thô phục vụ chấm điểm phát âm.");
+            return TwoPassSttResponse.builder()
+                    .rawText(trimmedRawText)
+                    .cleanedText(trimmedRawText)
+                    .corrections(Collections.emptyList())
+                    .confidence(0.95)
+                    .totalLatencyMs(totalLatency)
+                    .pass1LatencyMs(pass1Latency)
+                    .pass2LatencyMs(0)
+                    .build();
+        }
+
+        // --- PASS 2: Semantic Refinement & Cleanup (Chế độ hội thoại thông minh) ---
         long pass2Start = System.currentTimeMillis();
         Pass2Result pass2Result = executePass2WithFallback(trimmedRawText, apiKey, configId);
         long pass2Latency = System.currentTimeMillis() - pass2Start;
@@ -160,13 +183,30 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                 .build();
     }
 
+    private List<String> resolvePass1CandidateModels() {
+        List<String> models = new ArrayList<>();
+        if (dynamicApiKeyService != null) {
+            AiServiceConfig config = dynamicApiKeyService.getActiveConfig("GEMINI", "STT");
+            if (config != null && config.getModelName() != null && !config.getModelName().isBlank()) {
+                models.add(config.getModelName().trim());
+            }
+        }
+        for (String defaultModel : DEFAULT_PASS1_MODELS) {
+            if (!models.contains(defaultModel)) {
+                models.add(defaultModel);
+            }
+        }
+        return models;
+    }
+
     private String executePass1(String base64Audio, String mimeType, String apiKey, Long configId) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Exception lastException = null;
+        List<String> candidateModels = resolvePass1CandidateModels();
 
-        for (String model : PASS1_CANDIDATE_MODELS) {
+        for (String model : candidateModels) {
             long callStart = System.currentTimeMillis();
             try {
                 String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, apiKey);
@@ -176,7 +216,7 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                 ObjectNode contentObj = contentsArray.addObject();
                 ArrayNode partsArray = contentObj.putArray("parts");
 
-                // Phần 1: Chỉ thị nhận dạng
+                // Phần 1: Chỉ thị nhận dạng nguyên văn (verbatim)
                 partsArray.addObject().put("text", PASS1_PROMPT);
 
                 // Phần 2: Âm thanh đa phương thức Base64
@@ -195,8 +235,22 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                 int latencyMs = (int) (System.currentTimeMillis() - callStart);
 
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    recordAiUsage(configId, "STT_PASS1", model, latencyMs, 200);
+                    if (dynamicApiKeyService != null && configId != null) {
+                        dynamicApiKeyService.markHealthy(configId);
+                    }
+
                     JsonNode respNode = objectMapper.readTree(response.getBody());
+
+                    int promptTokens = 0;
+                    int completionTokens = 0;
+                    JsonNode usageMetadata = respNode.path("usageMetadata");
+                    if (!usageMetadata.isMissingNode()) {
+                        promptTokens = usageMetadata.path("promptTokenCount").asInt(0);
+                        completionTokens = usageMetadata.path("candidatesTokenCount").asInt(0);
+                    }
+
+                    recordAiUsage(configId, "STT", model, promptTokens, completionTokens, latencyMs, 200);
+
                     JsonNode candidates = respNode.path("candidates");
                     if (candidates.isArray() && !candidates.isEmpty()) {
                         JsonNode parts = candidates.get(0).path("content").path("parts");
@@ -212,12 +266,12 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                 if (dynamicApiKeyService != null && (httpEx.getStatusCode().value() == 429 || httpEx.getStatusCode().value() == 403)) {
                     dynamicApiKeyService.markCooldown(configId, httpEx.getStatusCode().value(), 15);
                 }
-                recordAiUsage(configId, "STT_PASS1", model, latencyMs, httpEx.getStatusCode().value());
+                recordAiUsage(configId, "STT", model, 0, 0, latencyMs, httpEx.getStatusCode().value());
                 lastException = httpEx;
             } catch (Exception ex) {
                 int latencyMs = (int) (System.currentTimeMillis() - callStart);
                 log.error("Lỗi bất thường khi gọi Pass 1 STT với model [{}]: {}", model, ex.getMessage(), ex);
-                recordAiUsage(configId, "STT_PASS1", model, latencyMs, 500);
+                recordAiUsage(configId, "STT", model, 0, 0, latencyMs, 500);
                 lastException = ex;
             }
         }
@@ -259,8 +313,18 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                 int latencyMs = (int) (System.currentTimeMillis() - callStart);
 
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    recordAiUsage(configId, "STT_PASS2", model, latencyMs, 200);
                     JsonNode respNode = objectMapper.readTree(response.getBody());
+
+                    int promptTokens = 0;
+                    int completionTokens = 0;
+                    JsonNode usageMetadata = respNode.path("usageMetadata");
+                    if (!usageMetadata.isMissingNode()) {
+                        promptTokens = usageMetadata.path("promptTokenCount").asInt(0);
+                        completionTokens = usageMetadata.path("candidatesTokenCount").asInt(0);
+                    }
+
+                    recordAiUsage(configId, "STT", model, promptTokens, completionTokens, latencyMs, 200);
+
                     JsonNode candidates = respNode.path("candidates");
                     if (candidates.isArray() && !candidates.isEmpty()) {
                         JsonNode parts = candidates.get(0).path("content").path("parts");
@@ -276,11 +340,11 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                 if (dynamicApiKeyService != null && (httpEx.getStatusCode().value() == 429 || httpEx.getStatusCode().value() == 403)) {
                     dynamicApiKeyService.markCooldown(configId, httpEx.getStatusCode().value(), 15);
                 }
-                recordAiUsage(configId, "STT_PASS2", model, latencyMs, httpEx.getStatusCode().value());
+                recordAiUsage(configId, "STT", model, 0, 0, latencyMs, httpEx.getStatusCode().value());
             } catch (Exception ex) {
                 int latencyMs = (int) (System.currentTimeMillis() - callStart);
                 log.error("Lỗi khi xử lý Pass 2 STT với model [{}]: {}", model, ex.getMessage(), ex);
-                recordAiUsage(configId, "STT_PASS2", model, latencyMs, 500);
+                recordAiUsage(configId, "STT", model, 0, 0, latencyMs, 500);
             }
         }
 
@@ -383,7 +447,7 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
         throw new IllegalStateException("Không tìm thấy Google Gemini API Key trong cấu hình hệ thống");
     }
 
-    private void recordAiUsage(Long configId, String featureCode, String modelName, int latencyMs, int httpStatus) {
+    private void recordAiUsage(Long configId, String featureCode, String modelName, int promptTokens, int completionTokens, int latencyMs, int httpStatus) {
         if (aiCostTrackingService != null) {
             try {
                 aiCostTrackingService.recordUsage(
@@ -391,8 +455,8 @@ public class TwoPassSttServiceImpl implements TwoPassSttService {
                         "GEMINI",
                         featureCode,
                         modelName,
-                        0,
-                        0,
+                        promptTokens,
+                        completionTokens,
                         0,
                         latencyMs,
                         httpStatus
