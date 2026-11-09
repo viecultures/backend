@@ -30,13 +30,13 @@ public class GeminiVoiceService {
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
-    @Value("${gemini.model}")
-    private String geminiModel;
 
-    @Value("${gemini.api.url}")
+
+
+    @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models}")
     private String geminiApiUrl;
 
-    @Value("${audio.output.dir}")
+    @Value("${audio.output.dir:../frontend/public/audio}")
     private String audioOutputDir;
 
     // Supported Gemini TTS models for failover across Gemini API quotas
@@ -70,6 +70,16 @@ public class GeminiVoiceService {
         return (geminiApiKey != null && !geminiApiKey.isBlank()) ? geminiApiKey.trim() : null;
     }
 
+    public String getActiveGeminiVoiceModel() {
+        if (dynamicApiKeyService != null) {
+            String dbModel = dynamicApiKeyService.getActiveGeminiTtsModel();
+            if (dbModel != null && !dbModel.isBlank()) {
+                return dbModel.trim();
+            }
+        }
+        return "gemini-3.8-flash-tts";
+    }
+
     /**
      * Hàm sinh file voice cho bài viết mới trực tiếp từ Google Gemini API
      * 
@@ -96,7 +106,7 @@ public class GeminiVoiceService {
 
         // Try primary model first, followed by other Gemini models if quota exceeded
         List<String> modelsToTry = new ArrayList<>();
-        modelsToTry.add(geminiModel);
+        modelsToTry.add(getActiveGeminiVoiceModel());
         for (String m : GEMINI_MODELS) {
             if (!modelsToTry.contains(m)) {
                 modelsToTry.add(m);
@@ -138,7 +148,7 @@ public class GeminiVoiceService {
         String resolvedVoice = mapVoiceToGemini(voiceName);
 
         List<String> modelsToTry = new ArrayList<>();
-        modelsToTry.add(geminiModel);
+        modelsToTry.add(getActiveGeminiVoiceModel());
         for (String m : GEMINI_MODELS) {
             if (!modelsToTry.contains(m)) {
                 modelsToTry.add(m);
