@@ -17,6 +17,7 @@ public class LearningJourneyRequest {
     private String provinceId;
     private String region; // north, central, south
     private String description;
+    private String descriptionVi;
     private String imageUrl;
     private String status; // published, draft, upcoming, scheduled
     private LocalDateTime scheduledPublishAt; // Scheduled time for automated publishing

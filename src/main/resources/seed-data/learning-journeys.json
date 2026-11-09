@@ -8,7 +8,8 @@
     "region": "north",
     "description": "Explore the culinary science, morning rituals, and regional diversity of Vietnam’s iconic noodle soup.",
     "imageUrl": "/images/series/pho-hanoi.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Khám phá tinh hoa ẩm thực, văn hóa đón ngày mới và nét độc đáo của phở bò truyền thống – biểu tượng ẩm thực của đất Hà thành."
   },
   {
     "id": "bun-cha",
@@ -19,7 +20,8 @@
     "region": "north",
     "description": "Discover the charcoal grilling secrets, lunchtime sidewalk culture, and refined elegance of Hanoi’s iconic bún chả.",
     "imageUrl": "/images/series/bun-cha.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Khám phá bí quyết nướng chả than hoa thơm lừng, văn hóa ăn trưa vỉa hè độc đáo và nét thanh tao của bún chả Hà Nội."
   },
   {
     "id": "cha-ca-la-vong",
@@ -30,7 +32,8 @@
     "region": "north",
     "description": "Explore the 1871 origin, interactive tabletop cooking, dill-turmeric pairing, and five elements balance of Hanoi’s iconic fish specialty.",
     "imageUrl": "/images/series/cha-ca-la-vong.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Khám phá câu chuyện nguồn gốc từ năm 1871, nét văn hóa thưởng thức chả cá trên chảo nóng, sự kết hợp hoàn hảo giữa thì là, nghệ tươi và mắm tôm nức tiếng Hà thành."
   },
   {
     "id": "ca-kho-vu-dai",
@@ -41,7 +44,8 @@
     "region": "north",
     "description": "Discover the 16-hour longan wood simmering, literary roots in Nam Cao’s stories, and natural flavor layering of Hà Nam’s legendary braised carp.",
     "imageUrl": "/images/series/ca-kho-vu-dai.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Khám phá nghệ thuật kho cá 16 tiếng bằng củi nhãn, niêu đất cổ truyền và câu chuyện văn hóa gắn liền với trang văn Nam Cao của làng Vũ Đại."
   },
   {
     "id": "com-chay-ninh-binh",
@@ -52,7 +56,8 @@
     "region": "north",
     "description": "Discover the 19th-century origin of Đinh Hoàng Thăng, cast-iron pot crust techniques, and the dramatic sizzle of mountain goat sauce over crispy rice.",
     "imageUrl": "/images/series/com-chay-ninh-binh.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Tìm hiểu nguồn gốc thế kỷ 19 của ông Đinh Hoàng Thăng, kỹ thuật ép cháy đáy nồi gang giòn rụm và nước sốt dê núi thơm lừng đất cố đô Ninh Bình."
   },
   {
     "id": "banh-cay-thai-binh",
@@ -63,7 +68,8 @@
     "region": "north",
     "description": "Explore Lady Nguyễn Thị Tần’s royal tribute, natural coloring with gac and gardenia, and the comforting winter ritual of hot tea with crispy sweet bánh cáy.",
     "imageUrl": "/images/series/banh-cay-thai-binh.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Khám phá thức quà tiến vua của Nữ quan Nguyễn Thị Tần, nghệ thuật nhuộm màu tự nhiên từ gấc và dành dành, cùng thú vui thưởng trà ấm nóng với bánh cáy ngày đông xứ Bắc."
   },
   {
     "id": "hue-citadel",
@@ -74,7 +80,8 @@
     "region": "central",
     "description": "Walk through the ancient royal capital on the banks of the Perfume River. Learn how to describe palace gates, courtyards and royal traditions in clear English.",
     "imageUrl": "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=1200&q=80",
-    "status": "draft"
+    "status": "draft",
+    "descriptionVi": "Dạo bước qua kinh thành cổ bên bờ sông Hương, khám phá kiến trúc cung đình và nét đẹp di sản triều Nguyễn."
   },
   {
     "id": "saigon-banh-mi",
@@ -85,7 +92,8 @@
     "region": "south",
     "description": "Follow the journey of the iconic Vietnamese baguette from French culinary influence to a beloved global street food phenomenon.",
     "imageUrl": "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=1200&q=80",
-    "status": "draft"
+    "status": "draft",
+    "descriptionVi": "Hành trình của ổ bánh mì Việt Nam từ ảnh hưởng ẩm thực Pháp đến nét văn hóa đường phố nức tiếng thế giới."
   },
   {
     "id": "goi-ca-nhech",
@@ -94,9 +102,10 @@
     "theme": "cuisine",
     "provinceId": "ninh-binh",
     "region": "north",
-    "description": "Khám phá hành trình văn hóa ẩm thực GỎI CÁ NHỆCH.",
+    "description": "Explore the culinary art of Kim Son raw nhech fish salad – a harmonious blend of sweet fresh fish, spiced chẻo sauce, and fragrant wild leaves.",
     "imageUrl": "/images/series/goi-ca-nhech.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Khám phá nghệ thuật thưởng thức gỏi cá nhệch trứ danh vùng biển Kim Sơn – sự hòa quyện đỉnh cao giữa từng lát cá tươi ngọt thịt, nước chẻo béo bùi và hơn mười loại lá rừng thanh mát."
   },
   {
     "id": "be-chao",
@@ -105,9 +114,10 @@
     "theme": "cuisine",
     "provinceId": "son-la",
     "region": "north",
-    "description": "Khám phá hành trình văn hóa ẩm thực BÊ CHAO.",
+    "description": "Specialty of the misty Mộc Châu plateau – tender young veal quick-fried in smoking oil, fragrant with ginger lemongrass and paired with rich fermented bean sauce.",
     "imageUrl": "/images/series/be-chao.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Đặc sản cao nguyên Mộc Châu xứ sương mù – thịt bê non ngọt mềm chao qua dầu sôi lửa lớn, thơm nức gừng sả thái sợi và chấm cùng tương bần đậm đà."
   },
   {
     "id": "xoi-nep-nuong",
@@ -116,9 +126,10 @@
     "theme": "cuisine",
     "provinceId": "dien-bien",
     "region": "north",
-    "description": "Khám phá hành trình văn hóa ẩm thực XÔI NẾP NƯƠNG.",
+    "description": "Treasure of Mai Chau valley – fragrant upland sticky rice steamed in wooden cookers, deeply tied to the Thai ethnic new harvest celebration.",
     "imageUrl": "/images/series/xoi-nep-nuong.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Hạt ngọc thung lũng Mai Châu – nếp nương thơm dẻo đồ trong chõ gỗ truyền thống, gắn liền với bản sắc văn hóa lễ hội mừng cơm mới của người Thái."
   },
   {
     "id": "banh-chung-lang-dam-ha-nam",
@@ -127,9 +138,10 @@
     "theme": "cuisine",
     "provinceId": "ha-nam",
     "region": "north",
-    "description": "Chuyên đề di sản ẩm thực truyền thống: Bánh chưng Làng Đầm, Hà Nam.",
+    "description": "Traditional culinary heritage: Làng Đầm square sticky rice cake, Hà Nam.",
     "imageUrl": "/images/series/banh-chung-lang-dam-ha-nam.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Chuyên đề di sản ẩm thực truyền thống: Bánh chưng Làng Đầm, Hà Nam."
   },
   {
     "id": "khau-nhuc-lang-son",
@@ -138,9 +150,10 @@
     "theme": "cuisine",
     "provinceId": "lang-son",
     "region": "north",
-    "description": "Chuyên đề di sản ẩm thực truyền thống: Khâu nhục lạng sơn.",
+    "description": "Explore Lạng Sơn's renowned khâu nhục – an exquisite fusion of Tày, Nùng and Chinese traditions, slow-steamed with tau soi leaves and fragrant mountain herbs.",
     "imageUrl": "/images/series/khau-nhuc-lang-son.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Khám phá món khâu nhục trứ danh của xứ Lạng – sự kết hợp tinh tế giữa văn hóa Tày, Nùng và gốc gác người Hoa với kỹ thuật luộc, châm bì, chiên giòn và chưng cách thủy công phu cùng lá tàu soi và thảo mộc vùng cao."
   },
   {
     "id": "thang-co",
@@ -149,8 +162,9 @@
     "theme": "cuisine",
     "provinceId": "lao-cai",
     "region": "north",
-    "description": "Chuyên đề di sản ẩm thực truyền thống: Thắng cố.",
+    "description": "Immerse in northwestern highland culture through steaming pots of thắng cố at mountain fairs – a traditional Hmong stew with cardamom, star anise, and cinnamon.",
     "imageUrl": "/images/series/thang-co.webp",
-    "status": "published"
+    "status": "published",
+    "descriptionVi": "Đắm chìm vào nét văn hóa vùng cao Tây Bắc qua chảo thắng cố sôi sùng sục giữa chợ phiên – món ăn truyền thống của người Mông kết hợp gia vị thảo quả, hoa hồi, sả quế làm ấm lòng lữ khách."
   }
 ]

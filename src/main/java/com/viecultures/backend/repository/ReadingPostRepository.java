@@ -20,7 +20,7 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
 
     @Query("SELECT new com.viecultures.backend.dto.CatalogPostView(" +
            "p.id, p.topicGroup, p.titleEn, p.titleVi, p.topic, p.region, p.imageUrl, " +
-           "p.wordCount, p.summary, p.level, p.readTime, p.totalReads, p.likesCount, " +
+           "p.wordCount, p.summary, p.summaryVi, p.level, p.readTime, p.totalReads, p.likesCount, " +
            "p.featured, p.createdAt, j.id) " +
            "FROM ReadingPost p LEFT JOIN p.journey j " +
            "WHERE (:standalone IS NULL OR (:standalone = true AND j.id IS NULL) OR (:standalone = false AND j.id IS NOT NULL))")
@@ -28,7 +28,7 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
 
     @Query(value = "SELECT new com.viecultures.backend.dto.CatalogPostView(" +
            "p.id, p.topicGroup, p.titleEn, p.titleVi, p.topic, p.region, p.imageUrl, " +
-           "p.wordCount, p.summary, p.level, p.readTime, p.totalReads, p.likesCount, " +
+           "p.wordCount, p.summary, p.summaryVi, p.level, p.readTime, p.totalReads, p.likesCount, " +
            "p.featured, p.createdAt, j.id) " +
            "FROM ReadingPost p LEFT JOIN p.journey j",
            countQuery = "SELECT COUNT(p) FROM ReadingPost p")
@@ -44,7 +44,8 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
            "LOWER(p.titleEn) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(p.titleVi) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(p.topic) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(p.summary) LIKE LOWER(CONCAT('%', :query, '%'))")
+           "LOWER(p.summary) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(p.summaryVi) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<ReadingPost> searchPosts(@Param("query") String query, Pageable pageable);
 
     @Query("SELECT COALESCE(SUM(p.totalReads), 0) FROM ReadingPost p")

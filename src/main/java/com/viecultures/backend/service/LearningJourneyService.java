@@ -2,6 +2,7 @@ package com.viecultures.backend.service;
 
 import com.viecultures.backend.dto.LearningJourneyRequest;
 import com.viecultures.backend.dto.LearningJourneyResponse;
+import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.LearningJourney;
 import com.viecultures.backend.entity.ReadingPost;
 import com.viecultures.backend.repository.LearningJourneyRepository;
@@ -88,7 +89,8 @@ public class LearningJourneyService {
                 Predicate matchEn = cb.like(cb.lower(root.get("titleEn")), pattern);
                 Predicate matchVi = cb.like(cb.lower(root.get("titleVi")), pattern);
                 Predicate matchDesc = cb.like(cb.lower(root.get("description")), pattern);
-                predicates.add(cb.or(matchEn, matchVi, matchDesc));
+                Predicate matchDescVi = cb.like(cb.lower(root.get("descriptionVi")), pattern);
+                predicates.add(cb.or(matchEn, matchVi, matchDesc, matchDescVi));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -134,6 +136,7 @@ public class LearningJourneyService {
                 .provinceId(request.getProvinceId() != null ? request.getProvinceId().trim() : "")
                 .region(request.getRegion() != null ? request.getRegion().toLowerCase().trim() : "north")
                 .description(request.getDescription())
+                .descriptionVi(request.getDescriptionVi())
                 .imageUrl(request.getImageUrl())
                 .status(targetStatus)
                 .scheduledPublishAt(scheduledPublishAt)
@@ -159,6 +162,9 @@ public class LearningJourneyService {
         if (request.getProvinceId() != null) journey.setProvinceId(request.getProvinceId().trim());
         if (request.getRegion() != null) journey.setRegion(request.getRegion().toLowerCase().trim());
         journey.setDescription(request.getDescription());
+        if (request.getDescriptionVi() != null) {
+            journey.setDescriptionVi(request.getDescriptionVi());
+        }
         journey.setImageUrl(request.getImageUrl());
         if (request.getStatus() != null) {
             String targetStatus = request.getStatus().toLowerCase().trim();
@@ -231,20 +237,50 @@ public class LearningJourneyService {
 
     public LearningJourneyResponse toResponse(LearningJourney journey) {
         List<LearningJourneyResponse.ChapterSummaryDto> chapterDtos = Collections.emptyList();
-        if (journey.getChapters() != null) {
-            chapterDtos = journey.getChapters().stream()
-                    .sorted(Comparator.comparing(p -> p.getChapterOrder() != null ? p.getChapterOrder() : 999))
-                    .map(p -> LearningJourneyResponse.ChapterSummaryDto.builder()
-                            .id(p.getId())
-                            .chapterOrder(p.getChapterOrder())
-                            .titleEn(p.getTitleEn())
-                            .titleVi(p.getTitleVi())
-                            .summary(p.getSummary())
-                            .readTime(p.getReadTime())
-                            .level(p.getLevel() != null ? p.getLevel().name() : "B1")
-                            .imageUrl(p.getImageUrl())
-                            .build())
-                    .collect(Collectors.toList());
+        if (journey.getChapters() != null && !journey.getChapters().isEmpty()) {
+            Map<String, List<ReadingPost>> grouped = journey.getChapters().stream()
+                    .collect(Collectors.groupingBy(
+                            p -> (p.getTopicGroup() != null && !p.getTopicGroup().isBlank())
+                                    ? p.getTopicGroup()
+                                    : (p.getChapterOrder() != null ? "order-" + p.getChapterOrder() : p.getId()),
+                            LinkedHashMap::new,
+                            Collectors.toList()
+                    ));
+
+            List<LearningJourneyResponse.ChapterSummaryDto> list = new ArrayList<>();
+            for (Map.Entry<String, List<ReadingPost>> entry : grouped.entrySet()) {
+                List<ReadingPost> groupPosts = entry.getValue();
+                if (groupPosts.isEmpty()) continue;
+
+                ReadingPost rep = groupPosts.stream()
+                        .filter(p -> p.getLevel() == CefrLevel.B1 || p.getLevel() == CefrLevel.B2)
+                        .findFirst()
+                        .orElse(groupPosts.get(0));
+
+                int minOrder = groupPosts.stream()
+                        .map(ReadingPost::getChapterOrder)
+                        .filter(Objects::nonNull)
+                        .min(Integer::compareTo)
+                        .orElse(999);
+
+                String chapterId = (rep.getTopicGroup() != null && !rep.getTopicGroup().isBlank())
+                        ? rep.getTopicGroup()
+                        : rep.getId();
+
+                list.add(LearningJourneyResponse.ChapterSummaryDto.builder()
+                        .id(chapterId)
+                        .chapterOrder(minOrder != 999 ? minOrder : (list.size() + 1))
+                        .titleEn(rep.getTitleEn())
+                        .titleVi(rep.getTitleVi())
+                        .summary(rep.getSummary())
+                        .readTime(rep.getReadTime())
+                        .level(rep.getLevel() != null ? rep.getLevel().name() : "B1")
+                        .imageUrl(rep.getImageUrl())
+                        .build());
+            }
+
+            list.sort(Comparator.comparing(c -> c.getChapterOrder() != null ? c.getChapterOrder() : 999));
+            chapterDtos = list;
         }
 
         return LearningJourneyResponse.builder()
@@ -255,6 +291,7 @@ public class LearningJourneyService {
                 .provinceId(journey.getProvinceId())
                 .region(journey.getRegion())
                 .description(journey.getDescription())
+                .descriptionVi(journey.getDescriptionVi())
                 .imageUrl(journey.getImageUrl())
                 .status(journey.getStatus())
                 .scheduledPublishAt(journey.getScheduledPublishAt())
@@ -279,6 +316,6 @@ public class LearningJourneyService {
         String noDiacritics = pattern.matcher(nfdNormalizedString).replaceAll("");
         return noDiacritics.toLowerCase()
                 .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-+|-+$", "");
+        .replaceAll("^-+|-+$", "");
     }
 }
