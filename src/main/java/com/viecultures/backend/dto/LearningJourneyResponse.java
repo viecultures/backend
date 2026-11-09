@@ -17,6 +17,7 @@ public class LearningJourneyResponse {
     private String provinceId;
     private String region;
     private String description;
+    private String descriptionVi;
     private String imageUrl;
     private String status;
     private LocalDateTime scheduledPublishAt;

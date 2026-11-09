@@ -21,10 +21,14 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
 
     public static final String KEY_GEMINI_CHAT_MODEL = "gemini_chat_model";
     public static final String KEY_GEMINI_TRANSLATE_MODEL = "gemini_translate_model";
+    public static final String KEY_GEMINI_TTS_MODEL = "gemini_tts_model";
+    public static final String KEY_GEMINI_STT_MODEL = "gemini_stt_model";
     public static final String KEY_AZURE_SPEECH_REGION = "azure_speech_region";
     public static final String KEY_ACTIVE_TTS_PROVIDER = "active_tts_provider";
 
     public static final String DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
+    public static final String DEFAULT_GEMINI_TTS_MODEL = "gemini-3.8-flash-tts";
+    public static final String DEFAULT_GEMINI_STT_MODEL = "gemini-3.5-transcribe";
     public static final String DEFAULT_AZURE_REGION = "southeastasia";
     public static final String DEFAULT_TTS_PROVIDER = "azure";
 
@@ -37,6 +41,9 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
 
     @Value("${gemini.api.key:}")
     private String defaultGeminiApiKey;
+
+
+
 
     @Value("${azure.speech.key:}")
     private String defaultAzureSpeechKey;
@@ -117,6 +124,38 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
         }
 
         return DEFAULT_GEMINI_MODEL;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getActiveGeminiTtsModel() {
+        Optional<SystemAiSetting> setting = systemAiSettingRepository.findBySettingKey(KEY_GEMINI_TTS_MODEL);
+        if (setting.isPresent() && setting.get().getSettingValue() != null && !setting.get().getSettingValue().isBlank()) {
+            return setting.get().getSettingValue().trim();
+        }
+
+        AiServiceConfig config = getActiveConfig("GEMINI", "TTS");
+        if (config != null && config.getModelName() != null && !config.getModelName().isBlank()) {
+            return config.getModelName().trim();
+        }
+
+        return DEFAULT_GEMINI_TTS_MODEL;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getActiveGeminiSttModel() {
+        Optional<SystemAiSetting> setting = systemAiSettingRepository.findBySettingKey(KEY_GEMINI_STT_MODEL);
+        if (setting.isPresent() && setting.get().getSettingValue() != null && !setting.get().getSettingValue().isBlank()) {
+            return setting.get().getSettingValue().trim();
+        }
+
+        AiServiceConfig config = getActiveConfig("GEMINI", "STT");
+        if (config != null && config.getModelName() != null && !config.getModelName().isBlank()) {
+            return config.getModelName().trim();
+        }
+
+        return DEFAULT_GEMINI_STT_MODEL;
     }
 
     @Override

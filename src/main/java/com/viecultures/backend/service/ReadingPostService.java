@@ -136,6 +136,7 @@ public class ReadingPostService {
                 .imageUrl(request.getImageUrl())
                 .wordCount(request.getWordCount())
                 .summary(request.getSummary())
+                .summaryVi(request.getSummaryVi())
                 .contentEn(request.getContentEn())
                 .contentVi(request.getContentVi())
                 .shadowingAudioUrl(request.getShadowingAudioUrl())
@@ -215,6 +216,9 @@ public class ReadingPostService {
         post.setImageUrl(request.getImageUrl());
         post.setWordCount(request.getWordCount());
         post.setSummary(request.getSummary());
+        if (request.getSummaryVi() != null) {
+            post.setSummaryVi(request.getSummaryVi());
+        }
         post.setContentEn(request.getContentEn());
         post.setContentVi(request.getContentVi());
         post.setShadowingAudioUrl(request.getShadowingAudioUrl());
@@ -319,6 +323,7 @@ public class ReadingPostService {
                 .imageUrl(post.getImageUrl())
                 .wordCount(post.getWordCount())
                 .summary(post.getSummary())
+                .summaryVi(post.getSummaryVi())
                 .contentEn(post.getContentEn())
                 .contentVi(post.getContentVi())
                 .shadowingAudioUrl(post.getShadowingAudioUrl())
@@ -491,6 +496,7 @@ public class ReadingPostService {
                         .vocabCount(vCount)
                         .wordCount(p.getWordCount() != null ? p.getWordCount() : 350)
                         .summary(p.getSummary())
+                        .summaryVi(p.getSummaryVi())
                         .build());
             }
 
@@ -515,6 +521,7 @@ public class ReadingPostService {
                             ? primary.getImageUrl()
                             : "https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?auto=format&fit=crop&w=1200&q=80")
                     .summary(primary.getSummary())
+                    .summaryVi(primary.getSummaryVi())
                     .featured(isFeatured)
                     .totalReads(totalReads)
                     .likesCount(totalLikes)
@@ -552,6 +559,7 @@ public class ReadingPostService {
                     .filter(l -> (l.getTitleEn() != null && l.getTitleEn().toLowerCase().contains(qLower))
                             || (l.getTitleVi() != null && l.getTitleVi().toLowerCase().contains(qLower))
                             || (l.getSummary() != null && l.getSummary().toLowerCase().contains(qLower))
+                            || (l.getSummaryVi() != null && l.getSummaryVi().toLowerCase().contains(qLower))
                             || (l.getRegion() != null && l.getRegion().toLowerCase().contains(qLower))
                             || (l.getTopicGroup() != null && l.getTopicGroup().toLowerCase().contains(qLower)))
                     .collect(Collectors.toList());

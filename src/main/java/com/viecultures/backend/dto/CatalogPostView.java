@@ -22,6 +22,7 @@ public class CatalogPostView {
     private String imageUrl;
     private Integer wordCount;
     private String summary;
+    private String summaryVi;
     private CefrLevel level;
     private String readTime;
     private Integer totalReads;

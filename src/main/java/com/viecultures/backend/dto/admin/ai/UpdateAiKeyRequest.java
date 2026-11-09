@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class UpdateAiKeyRequest {
 
     private String keyLabel;
+    private String serviceType;
     private String apiKey;
     private String modelName;
     private String region;
