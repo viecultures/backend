@@ -1,6 +1,8 @@
 package com.viecultures.backend.repository;
 
 import com.viecultures.backend.entity.LearningJourney;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +19,10 @@ public interface LearningJourneyRepository extends JpaRepository<LearningJourney
     @Override
     @EntityGraph(attributePaths = {"chapters"})
     List<LearningJourney> findAll(@Nullable Specification<LearningJourney> spec);
+
+    @Override
+    @EntityGraph(attributePaths = {"chapters"})
+    Page<LearningJourney> findAll(@Nullable Specification<LearningJourney> spec, Pageable pageable);
 
     @Override
     @EntityGraph(attributePaths = {"chapters"})

@@ -2,6 +2,7 @@ package com.viecultures.backend.service;
 
 import com.viecultures.backend.dto.LearningJourneyRequest;
 import com.viecultures.backend.dto.LearningJourneyResponse;
+import com.viecultures.backend.dto.PagedLearningJourneyResponse;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.LearningJourney;
 import com.viecultures.backend.entity.ReadingPost;
@@ -10,6 +11,9 @@ import com.viecultures.backend.repository.ReadingPostRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -60,9 +64,8 @@ public class LearningJourneyService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public List<LearningJourneyResponse> getJourneys(String region, String provinceId, String theme, String status, String query) {
-        Specification<LearningJourney> spec = (root, q, cb) -> {
+    private Specification<LearningJourney> buildSpecification(String region, String provinceId, String theme, String status, String query) {
+        return (root, q, cb) -> {
             if (q != null) {
                 q.distinct(true);
             }
@@ -95,11 +98,36 @@ public class LearningJourneyService {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
 
+    @Transactional(readOnly = true)
+    public List<LearningJourneyResponse> getJourneys(String region, String provinceId, String theme, String status, String query) {
+        Specification<LearningJourney> spec = buildSpecification(region, provinceId, theme, status, query);
         List<LearningJourney> journeys = journeyRepository.findAll(spec);
         return journeys.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public PagedLearningJourneyResponse getPagedJourneys(String region, String provinceId, String theme, String status, String query, int page, int size) {
+        Specification<LearningJourney> spec = buildSpecification(region, provinceId, theme, status, query);
+        int validPage = Math.max(0, page);
+        int validSize = size > 0 ? size : 6;
+        Pageable pageable = PageRequest.of(validPage, validSize);
+        Page<LearningJourney> journeyPage = journeyRepository.findAll(spec, pageable);
+
+        List<LearningJourneyResponse> items = journeyPage.getContent().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+
+        return PagedLearningJourneyResponse.builder()
+                .items(items)
+                .page(journeyPage.getNumber())
+                .size(journeyPage.getSize())
+                .totalElements(journeyPage.getTotalElements())
+                .totalPages(journeyPage.getTotalPages())
+                .build();
     }
 
     @Transactional(readOnly = true)
