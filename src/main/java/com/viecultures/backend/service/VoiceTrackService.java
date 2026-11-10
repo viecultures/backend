@@ -1,14 +1,18 @@
 package com.viecultures.backend.service;
 
+import com.viecultures.backend.config.R2StorageConfig;
 import com.viecultures.backend.dto.GenerateVoiceTrackRequest;
 import com.viecultures.backend.dto.TtsRequest;
 import com.viecultures.backend.dto.TtsResult;
 import com.viecultures.backend.dto.VoiceModelDto;
 import com.viecultures.backend.dto.VoiceTrackResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.FileOutputStream;
 import java.nio.file.Files;
@@ -19,13 +23,23 @@ import java.util.List;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class VoiceTrackService {
 
     private final TtsManagerService ttsManagerService;
+    private final R2StorageConfig r2Config;
+    private final S3Client s3Client;
 
-    @Value("${audio.output.dir}")
+    @Value("${audio.output.dir:./uploads/audio}")
     private String audioOutputDir;
+
+    public VoiceTrackService(
+            TtsManagerService ttsManagerService,
+            R2StorageConfig r2Config,
+            @Autowired(required = false) S3Client s3Client) {
+        this.ttsManagerService = ttsManagerService;
+        this.r2Config = r2Config;
+        this.s3Client = s3Client;
+    }
 
     private static final List<VoiceModelDto> CURATED_VOICE_MODELS = List.of(
             VoiceModelDto.builder()
@@ -89,7 +103,7 @@ public class VoiceTrackService {
                     .voice(voiceId)
                     .speed("0%")
                     .build());
-            saveToFile("posts/" + normalFilename, normalResult.getAudioData());
+            String normalUrl = saveAudioTrack("posts/" + normalFilename, normalResult.getAudioData());
 
             // 2. Tạo audio phiên bản Chậm (-15% cho người mới học / Shadowing)
             TtsResult slowResult = ttsManagerService.synthesize(TtsRequest.builder()
@@ -97,10 +111,7 @@ public class VoiceTrackService {
                     .voice(voiceId)
                     .speed("-15%")
                     .build());
-            saveToFile("posts/" + slowFilename, slowResult.getAudioData());
-
-            String normalUrl = "/audio/posts/" + normalFilename;
-            String slowUrl = "/audio/posts/" + slowFilename;
+            String slowUrl = saveAudioTrack("posts/" + slowFilename, slowResult.getAudioData());
 
             log.info("Voice track generated successfully: voice={}, normal={}, slow={}", voiceId, normalUrl, slowUrl);
 
@@ -121,6 +132,40 @@ public class VoiceTrackService {
         }
     }
 
+    private String saveAudioTrack(String relativePath, byte[] data) throws Exception {
+        if (s3Client != null && r2Config != null && r2Config.isConfigured()) {
+            try {
+                String cleanPath = relativePath.replace("\\", "/");
+                String key = "audio/" + (cleanPath.startsWith("/") ? cleanPath.substring(1) : cleanPath);
+                return uploadToR2(key, data, "audio/mpeg");
+            } catch (Exception r2Ex) {
+                log.warn("Lỗi khi tải file audio lên Cloudflare R2: {}. Chuyển sang lưu trữ tệp an toàn.", r2Ex.getMessage());
+            }
+        }
+        return saveToFile(relativePath, data);
+    }
+
+    private String uploadToR2(String key, byte[] data, String contentType) {
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(r2Config.getBucketName())
+                .key(key)
+                .contentType(contentType)
+                .cacheControl("public, max-age=31536000, immutable")
+                .build();
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(data));
+        String publicDomain = r2Config.getPublicDomain();
+        if (publicDomain == null || publicDomain.trim().isEmpty()) {
+            publicDomain = "https://cdn.viecultures.com";
+        }
+        publicDomain = publicDomain.trim();
+        if (publicDomain.endsWith("/")) {
+            publicDomain = publicDomain.substring(0, publicDomain.length() - 1);
+        }
+        String publicUrl = String.format("%s/%s", publicDomain, key);
+        log.info("Đã tải tệp audio lên Cloudflare R2 thành công: {}", publicUrl);
+        return publicUrl;
+    }
+
     private String findVoiceDisplayName(String voiceId) {
         return CURATED_VOICE_MODELS.stream()
                 .filter(m -> m.getId().equalsIgnoreCase(voiceId))
@@ -136,17 +181,35 @@ public class VoiceTrackService {
                 .replaceAll("_+", "_");
     }
 
-    private void saveToFile(String relativePath, byte[] data) throws Exception {
-        Path baseDir = Paths.get(audioOutputDir);
-        if (!baseDir.isAbsolute()) {
-            baseDir = Paths.get("").toAbsolutePath().resolve(baseDir).normalize();
+    private String saveToFile(String relativePath, byte[] data) throws Exception {
+        Path targetPath;
+        try {
+            Path baseDir = Paths.get(audioOutputDir);
+            if (!baseDir.isAbsolute()) {
+                baseDir = Paths.get("").toAbsolutePath().resolve(baseDir).normalize();
+            }
+            // Phòng vệ đặc biệt: Nếu đường dẫn trỏ tới /frontend trên Linux root hoặc thư mục không có quyền ghi
+            String baseStr = baseDir.toString().replace("\\", "/");
+            if (baseStr.startsWith("/frontend") || !Files.isWritable(baseDir.getRoot() != null ? baseDir.getRoot() : Paths.get("."))) {
+                baseDir = Paths.get(System.getProperty("java.io.tmpdir"), "viecultures-audio");
+            }
+            targetPath = baseDir.resolve(relativePath);
+            if (targetPath.getParent() != null && !Files.exists(targetPath.getParent())) {
+                Files.createDirectories(targetPath.getParent());
+            }
+        } catch (Exception ex) {
+            log.warn("Không thể dùng đường dẫn lưu file {}: {}. Chuyển sang thư mục tạm hệ thống.", audioOutputDir, ex.getMessage());
+            Path fallbackBase = Paths.get(System.getProperty("java.io.tmpdir"), "viecultures-audio");
+            targetPath = fallbackBase.resolve(relativePath);
+            if (targetPath.getParent() != null && !Files.exists(targetPath.getParent())) {
+                Files.createDirectories(targetPath.getParent());
+            }
         }
-        Path targetPath = baseDir.resolve(relativePath);
-        if (targetPath.getParent() != null && !Files.exists(targetPath.getParent())) {
-            Files.createDirectories(targetPath.getParent());
-        }
+
         try (FileOutputStream fos = new FileOutputStream(targetPath.toFile())) {
             fos.write(data);
         }
+
+        return "/audio/" + relativePath.replace("\\", "/");
     }
 }

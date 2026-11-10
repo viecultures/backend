@@ -9,6 +9,7 @@ import com.viecultures.backend.service.DynamicApiKeyService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -194,48 +195,60 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markCooldown(Long configId, int statusCode, int durationMinutes) {
         if (configId == null) {
             return;
         }
-        configRepository.findById(configId).ifPresent(config -> {
-            int cooldownDuration = durationMinutes > 0 ? durationMinutes : (statusCode == 429 ? 15 : 60);
-            LocalDateTime cooldownUntil = LocalDateTime.now().plusMinutes(cooldownDuration);
-            config.setStatus("COOLDOWN");
-            config.setCooldownUntil(cooldownUntil);
-            configRepository.save(config);
-            log.warn("Config ID {} chuyen sang trang thai COOLDOWN den {} (HTTP {})", configId, cooldownUntil, statusCode);
-        });
+        try {
+            configRepository.findById(configId).ifPresent(config -> {
+                int cooldownDuration = durationMinutes > 0 ? durationMinutes : (statusCode == 429 ? 15 : 60);
+                LocalDateTime cooldownUntil = LocalDateTime.now().plusMinutes(cooldownDuration);
+                config.setStatus("COOLDOWN");
+                config.setCooldownUntil(cooldownUntil);
+                configRepository.save(config);
+                log.warn("Config ID {} chuyen sang trang thai COOLDOWN den {} (HTTP {})", configId, cooldownUntil, statusCode);
+            });
+        } catch (Exception ex) {
+            log.warn("Khong the cap nhat COOLDOWN cho configId {}: {}", configId, ex.getMessage());
+        }
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markHealthy(Long configId) {
         if (configId == null) {
             return;
         }
-        configRepository.findById(configId).ifPresent(config -> {
-            if (!"HEALTHY".equalsIgnoreCase(config.getStatus()) || config.getCooldownUntil() != null) {
-                config.setStatus("HEALTHY");
-                config.setCooldownUntil(null);
-                configRepository.save(config);
-                log.info("Config ID {} da duoc khoi phuc trang thai HEALTHY", configId);
-            }
-        });
+        try {
+            configRepository.findById(configId).ifPresent(config -> {
+                if (!"HEALTHY".equalsIgnoreCase(config.getStatus()) || config.getCooldownUntil() != null) {
+                    config.setStatus("HEALTHY");
+                    config.setCooldownUntil(null);
+                    configRepository.save(config);
+                    log.info("Config ID {} da duoc khoi phuc trang thai HEALTHY", configId);
+                }
+            });
+        } catch (Exception ex) {
+            log.warn("Khong the cap nhat HEALTHY cho configId {}: {}", configId, ex.getMessage());
+        }
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markError(Long configId, String errorMessage) {
         if (configId == null) {
             return;
         }
-        configRepository.findById(configId).ifPresent(config -> {
-            config.setStatus("ERROR");
-            configRepository.save(config);
-            log.error("Config ID {} duoc danh dau trang thai ERROR: {}", configId, errorMessage);
-        });
+        try {
+            configRepository.findById(configId).ifPresent(config -> {
+                config.setStatus("ERROR");
+                configRepository.save(config);
+                log.error("Config ID {} duoc danh dau trang thai ERROR: {}", configId, errorMessage);
+            });
+        } catch (Exception ex) {
+            log.warn("Khong the cap nhat ERROR cho configId {}: {}", configId, ex.getMessage());
+        }
     }
 
     private Optional<AiServiceConfig> resolveActiveConfig(String provider, String serviceType) {

@@ -349,14 +349,27 @@ public class GeminiVoiceService {
     }
 
     private Path resolveOutputDir() throws Exception {
-        Path path = Paths.get(audioOutputDir);
-        if (!path.isAbsolute()) {
-            path = Paths.get("").toAbsolutePath().resolve(path).normalize();
+        try {
+            Path path = Paths.get(audioOutputDir);
+            if (!path.isAbsolute()) {
+                path = Paths.get("").toAbsolutePath().resolve(path).normalize();
+            }
+            String pathStr = path.toString().replace("\\", "/");
+            if (pathStr.startsWith("/frontend") || !Files.isWritable(path.getRoot() != null ? path.getRoot() : Paths.get("."))) {
+                path = Paths.get(System.getProperty("java.io.tmpdir"), "viecultures-audio");
+            }
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+            }
+            return path;
+        } catch (Exception e) {
+            log.warn("Không thể dùng đường dẫn audioOutputDir {}: {}. Chuyển sang thư mục tạm hệ thống.", audioOutputDir, e.getMessage());
+            Path fallback = Paths.get(System.getProperty("java.io.tmpdir"), "viecultures-audio");
+            if (!Files.exists(fallback)) {
+                Files.createDirectories(fallback);
+            }
+            return fallback;
         }
-        if (!Files.exists(path)) {
-            Files.createDirectories(path);
-        }
-        return path;
     }
 
     private void saveAudioFile(byte[] audioBytes, String outputFilename) throws Exception {

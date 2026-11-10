@@ -47,8 +47,16 @@ public class CompanionChatController {
         String clientIdentifier = authentication.getName();
         boolean isPro = checkProStatus(authentication);
 
-        CompanionChatResponse response = companionChatService.chat(request, clientIdentifier, isPro);
-        return ResponseEntity.ok(ApiResponse.ok(response, "Companion response generated successfully"));
+        try {
+            CompanionChatResponse response = companionChatService.chat(request, clientIdentifier, isPro);
+            return ResponseEntity.ok(ApiResponse.ok(response, "Companion response generated successfully"));
+        } catch (org.springframework.web.server.ResponseStatusException rse) {
+            throw rse;
+        } catch (Exception ex) {
+            log.error("Unhandled error in companion chat for client {}: {}", clientIdentifier, ex.getMessage(), ex);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("COMPANION_ERROR", "Internal Server Error: " + ex.getMessage()));
+        }
     }
 
     @GetMapping("/quota")
