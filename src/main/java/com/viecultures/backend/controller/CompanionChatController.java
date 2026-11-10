@@ -3,6 +3,8 @@ package com.viecultures.backend.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viecultures.backend.dto.*;
+import com.viecultures.backend.entity.SubscriptionTransaction;
+import com.viecultures.backend.repository.SubscriptionTransactionRepository;
 import com.viecultures.backend.service.CompanionChatService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +29,7 @@ public class CompanionChatController {
 
     private final CompanionChatService companionChatService;
     private final ObjectMapper objectMapper;
+    private final SubscriptionTransactionRepository subscriptionTransactionRepository;
 
     @PostMapping("/chat")
     @Operation(
@@ -169,6 +172,21 @@ public class CompanionChatController {
                 String role = authority.getAuthority();
                 if ("ROLE_PRO".equalsIgnoreCase(role) || "ROLE_ADMIN".equalsIgnoreCase(role) || "ROLE_PREMIUM".equalsIgnoreCase(role)) {
                     return true;
+                }
+            }
+
+            if (subscriptionTransactionRepository != null) {
+                try {
+                    String identifier = authentication.getName();
+                    List<SubscriptionTransaction> txList = subscriptionTransactionRepository
+                            .findByUserIdOrUserEmailOrderByCreatedAtDesc(identifier, identifier);
+                    boolean hasApprovedSubscription = txList.stream()
+                            .anyMatch(t -> "APPROVED".equalsIgnoreCase(t.getStatus()));
+                    if (hasApprovedSubscription) {
+                        return true;
+                    }
+                } catch (Exception ex) {
+                    log.warn("Failed to check subscription status for {}: {}", authentication.getName(), ex.getMessage());
                 }
             }
         }

@@ -116,8 +116,8 @@ public class AdminUserServiceImpl implements AdminUserService {
             // BOM for UTF-8 in Excel
             sb.append('\uFEFF');
 
-            // Header: 'ID', 'Họ và tên', 'Email', 'Vai trò', 'Trình độ CEFR', 'Từ đã lưu', 'Phương thức đăng nhập', 'Ngày tạo', 'Trạng thái'
-            sb.append("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Từ đã lưu,Phương thức đăng nhập,Ngày tạo,Trạng thái\r\n");
+            // Header: 'ID', 'Họ và tên', 'Email', 'Vai trò', 'Trình độ CEFR', 'Gói hội viên', 'Phương thức đăng nhập', 'Ngày tạo', 'Trạng thái'
+            sb.append("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Gói hội viên,Phương thức đăng nhập,Ngày tạo,Trạng thái\r\n");
 
             DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
@@ -126,6 +126,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                         ? "Quản trị viên"
                         : "Học viên";
                 String cefrDisplay = u.getEnglishLevel() != null ? u.getEnglishLevel().name() : "Chưa xác định";
+                String planDisplay = u.getPlanName() != null ? u.getPlanName() : "Gói Cơ Bản (Miễn Phí)";
                 String statusDisplay = u.isEnabled() ? "Đang hoạt động" : "Đã khóa";
                 String createdAtDisplay = u.getCreatedAt() != null ? u.getCreatedAt().format(dtf) : "";
 
@@ -134,7 +135,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                   .append(escapeCsv(u.getEmail())).append(',')
                   .append(escapeCsv(roleDisplay)).append(',')
                   .append(escapeCsv(cefrDisplay)).append(',')
-                  .append(u.getSavedVocabCount()).append(',')
+                  .append(escapeCsv(planDisplay)).append(',')
                   .append(escapeCsv(u.getAuthProvider())).append(',')
                   .append(escapeCsv(createdAtDisplay)).append(',')
                   .append(escapeCsv(statusDisplay)).append("\r\n");
@@ -143,7 +144,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             return sb.toString().getBytes(StandardCharsets.UTF_8);
         } catch (Exception ex) {
             log.error("Error occurred while generating users CSV export: {}", ex.getMessage(), ex);
-            return ("\uFEFFID,Họ và tên,Email,Vai trò,Trình độ CEFR,Từ đã lưu,Phương thức đăng nhập,Ngày tạo,Trạng thái\r\n")
+            return ("\uFEFFID,Họ và tên,Email,Vai trò,Trình độ CEFR,Gói hội viên,Phương thức đăng nhập,Ngày tạo,Trạng thái\r\n")
                     .getBytes(StandardCharsets.UTF_8);
         }
     }
@@ -425,6 +426,32 @@ public class AdminUserServiceImpl implements AdminUserService {
             log.warn("Could not get vocab count for user {}: {}", user.getId(), e.getMessage());
         }
 
+        String planCode = "FREE";
+        String planName = "Gói Cơ Bản (Miễn Phí)";
+        String subscriptionStatus = "FREE";
+
+        if ("ROLE_ADMIN".equalsIgnoreCase(user.getRole()) || "ADMIN".equalsIgnoreCase(user.getRole())) {
+            planCode = "ADMIN";
+            planName = "Hội Viên Pro (Admin)";
+            subscriptionStatus = "ACTIVE";
+        } else {
+            try {
+                List<SubscriptionTransaction> txList = subscriptionTransactionRepository
+                        .findByUserIdOrUserEmailOrderByCreatedAtDesc(user.getId(), user.getEmail());
+                SubscriptionTransaction latestApprovedTx = txList.stream()
+                        .filter(t -> "APPROVED".equalsIgnoreCase(t.getStatus()))
+                        .findFirst()
+                        .orElse(null);
+                if (latestApprovedTx != null) {
+                    planCode = latestApprovedTx.getPlanCode() != null ? latestApprovedTx.getPlanCode() : "PRO";
+                    planName = latestApprovedTx.getPlanName() != null ? latestApprovedTx.getPlanName() : "Hội Viên Pro";
+                    subscriptionStatus = "ACTIVE";
+                }
+            } catch (Exception ex) {
+                log.warn("Could not get subscription for user {}: {}", user.getId(), ex.getMessage());
+            }
+        }
+
         return AdminUserSummaryDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -436,6 +463,9 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .englishLevel(user.getEnglishLevel())
                 .createdAt(user.getCreatedAt())
                 .savedVocabCount(vocabCount)
+                .planCode(planCode)
+                .planName(planName)
+                .subscriptionStatus(subscriptionStatus)
                 .build();
     }
 }

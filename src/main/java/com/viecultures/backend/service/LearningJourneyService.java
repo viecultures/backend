@@ -60,12 +60,12 @@ public class LearningJourneyService {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<LearningJourneyResponse> getJourneys(String region, String provinceId, String theme, String status, String query) {
-        // Đồng bộ các hành trình đến hạn xuất bản trước khi lọc và trả kết quả
-        autoPublishScheduledJourneys();
-
         Specification<LearningJourney> spec = (root, q, cb) -> {
+            if (q != null) {
+                q.distinct(true);
+            }
             List<Predicate> predicates = new ArrayList<>();
 
             if (region != null && !region.isBlank() && !region.equalsIgnoreCase("all")) {

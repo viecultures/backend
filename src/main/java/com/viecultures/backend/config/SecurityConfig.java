@@ -45,9 +45,12 @@ public class SecurityConfig {
 
                         // Endpoints đọc bài & học tập công khai (Catalog, Chi tiết bài đọc, Đếm lượt đọc)
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/posts/*/read").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/journeys/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/api/journeys/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/cuisine-series/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/api/cuisine-series/**").permitAll()
 
                         // Vocabulary & Dictionary Lookups & Progress Persistence
                         .requestMatchers(HttpMethod.GET, "/api/vocabularies/**").permitAll()

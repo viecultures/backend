@@ -23,4 +23,7 @@ public class AdminUserSummaryDto {
     private CefrLevel englishLevel;
     private LocalDateTime createdAt;
     private long savedVocabCount;
+    private String planCode;
+    private String planName;
+    private String subscriptionStatus;
 }
