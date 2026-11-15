@@ -33,6 +33,7 @@ public class ReadingPostResponse {
     private Integer totalReads;
     private Integer likesCount;
     private Boolean featured;
+    private String status;
     private LocalDateTime createdAt;
     private List<ParagraphPairDto> paragraphs;
     private List<VocabItemDto> vocabularies;

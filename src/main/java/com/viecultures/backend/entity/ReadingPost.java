@@ -93,6 +93,10 @@ public class ReadingPost {
     @Builder.Default
     private Boolean featured = false;
 
+    @Column(name = "status")
+    @Builder.Default
+    private String status = "draft";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

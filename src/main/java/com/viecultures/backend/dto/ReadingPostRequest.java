@@ -29,6 +29,7 @@ public class ReadingPostRequest {
     private CefrLevel level;
     private String readTime;
     private Boolean featured;
+    private String status;
     private List<ParagraphPairDto> paragraphs;
     private List<VocabItemDto> vocabularies;
     private List<QuizQuestionDto> questions;

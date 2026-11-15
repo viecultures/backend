@@ -79,6 +79,11 @@ public class ReadingPostService {
                 predicates.add(cb.or(matchEn, matchVi, matchTopicGroup));
             }
 
+            predicates.add(cb.or(
+                cb.isNull(root.get("status")),
+                cb.equal(cb.lower(root.get("status")), "published")
+            ));
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
@@ -121,6 +126,7 @@ public class ReadingPostService {
                 .level(request.getLevel())
                 .readTime(request.getReadTime())
                 .featured(Boolean.TRUE.equals(request.getFeatured()))
+                .status(request.getStatus() != null && !request.getStatus().isBlank() ? request.getStatus().toLowerCase().trim() : "published")
                 .build();
 
         if (request.getJourneyId() != null && !request.getJourneyId().isBlank()) {
@@ -201,6 +207,9 @@ public class ReadingPostService {
         post.setReadTime(request.getReadTime());
         if (request.getFeatured() != null) {
             post.setFeatured(request.getFeatured());
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            post.setStatus(request.getStatus().toLowerCase().trim());
         }
 
         if (request.getJourneyId() != null && !request.getJourneyId().isBlank()) {
@@ -300,6 +309,7 @@ public class ReadingPostService {
                 .totalReads(post.getTotalReads())
                 .likesCount(post.getLikesCount())
                 .featured(Boolean.TRUE.equals(post.getFeatured()))
+                .status(post.getStatus() != null ? post.getStatus() : "published")
                 .createdAt(post.getCreatedAt());
 
         if (post.getJourney() != null) {
@@ -361,6 +371,9 @@ public class ReadingPostService {
         // 1. Group posts by topicGroup or individual id
         Map<String, List<ReadingPost>> groups = new LinkedHashMap<>();
         for (ReadingPost post : allPosts) {
+            if (post.getStatus() != null && !"published".equalsIgnoreCase(post.getStatus())) {
+                continue;
+            }
             String key = (post.getTopicGroup() != null && !post.getTopicGroup().isBlank())
                     ? "group:" + post.getTopicGroup().trim().toLowerCase()
                     : "id:" + post.getId();

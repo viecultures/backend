@@ -233,6 +233,7 @@ public class LearningJourneyService {
         List<LearningJourneyResponse.ChapterSummaryDto> chapterDtos = Collections.emptyList();
         if (journey.getChapters() != null) {
             chapterDtos = journey.getChapters().stream()
+                    .filter(p -> p.getStatus() == null || "published".equalsIgnoreCase(p.getStatus()))
                     .sorted(Comparator.comparing(p -> p.getChapterOrder() != null ? p.getChapterOrder() : 999))
                     .map(p -> LearningJourneyResponse.ChapterSummaryDto.builder()
                             .id(p.getId())
