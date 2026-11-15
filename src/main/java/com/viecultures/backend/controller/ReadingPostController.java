@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.CatalogResponse;
+import com.viecultures.backend.dto.EntityOptionDto;
 import com.viecultures.backend.annotation.AuditLog;
 import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
@@ -26,6 +27,12 @@ import java.util.Map;
 public class ReadingPostController {
 
     private final ReadingPostService readingPostService;
+
+    @Operation(summary = "Lấy danh sách rút gọn bài đọc cho dropdown", description = "Chỉ trả về id, titleVi, titleEn để tối ưu băng thông")
+    @GetMapping("/options")
+    public ResponseEntity<List<EntityOptionDto>> getPostOptions() {
+        return ResponseEntity.ok(readingPostService.getPostOptions());
+    }
 
     @Operation(summary = "Lấy danh mục bài đọc Discovery (Gom nhóm đa cấp độ)", description = "Gom nhóm theo topicGroup thành Lesson đa cấp độ (Level 1, 2, 3), kèm số lượng theo chủ đề (topicCounts) và phân trang")
     @GetMapping("/catalog")

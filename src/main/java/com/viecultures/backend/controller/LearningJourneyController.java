@@ -1,5 +1,6 @@
 package com.viecultures.backend.controller;
 
+import com.viecultures.backend.dto.EntityOptionDto;
 import com.viecultures.backend.dto.LearningJourneyRequest;
 import com.viecultures.backend.dto.LearningJourneyResponse;
 import com.viecultures.backend.dto.PagedLearningJourneyResponse;
@@ -23,6 +24,12 @@ import java.util.Map;
 public class LearningJourneyController {
 
     private final LearningJourneyService journeyService;
+
+    @Operation(summary = "Lấy danh sách rút gọn hành trình học cho dropdown", description = "Chỉ trả về id, titleVi, titleEn để tối ưu băng thông")
+    @GetMapping("/options")
+    public ResponseEntity<List<EntityOptionDto>> getJourneyOptions() {
+        return ResponseEntity.ok(journeyService.getJourneyOptions());
+    }
 
     @Operation(summary = "Lấy danh sách hành trình học", description = "Lọc theo vùng miền (region), tỉnh thành (provinceId), chủ đề (theme), trạng thái (status), từ khóa (query), hỗ trợ phân trang khi truyền page")
     @GetMapping

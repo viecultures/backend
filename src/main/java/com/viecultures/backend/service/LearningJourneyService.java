@@ -1,5 +1,8 @@
 package com.viecultures.backend.service;
 
+import com.viecultures.backend.config.CacheConfig;
+import com.viecultures.backend.dto.EntityOptionDto;
+import com.viecultures.backend.dto.JourneyChapterView;
 import com.viecultures.backend.dto.LearningJourneyRequest;
 import com.viecultures.backend.dto.LearningJourneyResponse;
 import com.viecultures.backend.dto.PagedLearningJourneyResponse;
@@ -11,6 +14,10 @@ import com.viecultures.backend.repository.ReadingPostRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +39,21 @@ public class LearningJourneyService {
 
     private final LearningJourneyRepository journeyRepository;
     private final ReadingPostRepository readingPostRepository;
+    private final CacheManager cacheManager;
+
+    private void evictJourneyCaches() {
+        for (String name : List.of(
+                CacheConfig.CACHE_JOURNEYS_LIST,
+                CacheConfig.CACHE_JOURNEY_BY_ID,
+                CacheConfig.CACHE_JOURNEY_OPTIONS,
+                CacheConfig.CACHE_POSTS_CATALOG
+        )) {
+            Cache cache = cacheManager.getCache(name);
+            if (cache != null) {
+                cache.clear();
+            }
+        }
+    }
 
     /**
      * Tự động quét và xuất bản các hành trình học có trạng thái "scheduled" đã đến hạn.
@@ -60,6 +82,7 @@ public class LearningJourneyService {
     public void runScheduledPublishCron() {
         int count = autoPublishScheduledJourneys();
         if (count > 0) {
+            evictJourneyCaches();
             log.info("[ScheduledPublish Cron] Đã tự động xuất bản thành công {} hành trình học.", count);
         }
     }
@@ -100,15 +123,21 @@ public class LearningJourneyService {
         };
     }
 
+    @Cacheable(CacheConfig.CACHE_JOURNEY_OPTIONS)
+    @Transactional(readOnly = true)
+    public List<EntityOptionDto> getJourneyOptions() {
+        return journeyRepository.findAllJourneyOptions();
+    }
+
+    @Cacheable(CacheConfig.CACHE_JOURNEYS_LIST)
     @Transactional(readOnly = true)
     public List<LearningJourneyResponse> getJourneys(String region, String provinceId, String theme, String status, String query) {
         Specification<LearningJourney> spec = buildSpecification(region, provinceId, theme, status, query);
         List<LearningJourney> journeys = journeyRepository.findAll(spec);
-        return journeys.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return mapJourneysWithChapters(journeys);
     }
 
+    @Cacheable(CacheConfig.CACHE_JOURNEYS_LIST)
     @Transactional(readOnly = true)
     public PagedLearningJourneyResponse getPagedJourneys(String region, String provinceId, String theme, String status, String query, int page, int size) {
         Specification<LearningJourney> spec = buildSpecification(region, provinceId, theme, status, query);
@@ -117,9 +146,7 @@ public class LearningJourneyService {
         Pageable pageable = PageRequest.of(validPage, validSize);
         Page<LearningJourney> journeyPage = journeyRepository.findAll(spec, pageable);
 
-        List<LearningJourneyResponse> items = journeyPage.getContent().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        List<LearningJourneyResponse> items = mapJourneysWithChapters(journeyPage.getContent());
 
         return PagedLearningJourneyResponse.builder()
                 .items(items)
@@ -130,13 +157,21 @@ public class LearningJourneyService {
                 .build();
     }
 
+    @Cacheable(value = CacheConfig.CACHE_JOURNEY_BY_ID, key = "#id")
     @Transactional(readOnly = true)
     public LearningJourneyResponse getJourneyById(String id) {
         LearningJourney journey = journeyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Hành trình học không tồn tại với ID: " + id));
-        return toResponse(journey);
+        List<JourneyChapterView> chapterViews = readingPostRepository.findPublishedChapterViewsByJourneyIds(Collections.singletonList(id));
+        return buildJourneyResponse(journey, buildChapterDtos(chapterViews));
     }
 
+    @CacheEvict(value = {
+            CacheConfig.CACHE_JOURNEYS_LIST,
+            CacheConfig.CACHE_JOURNEY_BY_ID,
+            CacheConfig.CACHE_JOURNEY_OPTIONS,
+            CacheConfig.CACHE_POSTS_CATALOG
+    }, allEntries = true)
     @Transactional
     public LearningJourneyResponse createJourney(LearningJourneyRequest request) {
         String slug = generateSlug(request.getId(), request.getTitleEn());
@@ -179,6 +214,12 @@ public class LearningJourneyService {
         return toResponse(saved);
     }
 
+    @CacheEvict(value = {
+            CacheConfig.CACHE_JOURNEYS_LIST,
+            CacheConfig.CACHE_JOURNEY_BY_ID,
+            CacheConfig.CACHE_JOURNEY_OPTIONS,
+            CacheConfig.CACHE_POSTS_CATALOG
+    }, allEntries = true)
     @Transactional
     public LearningJourneyResponse updateJourney(String id, LearningJourneyRequest request) {
         LearningJourney journey = journeyRepository.findById(id)
@@ -217,6 +258,12 @@ public class LearningJourneyService {
         return toResponse(updated);
     }
 
+    @CacheEvict(value = {
+            CacheConfig.CACHE_JOURNEYS_LIST,
+            CacheConfig.CACHE_JOURNEY_BY_ID,
+            CacheConfig.CACHE_JOURNEY_OPTIONS,
+            CacheConfig.CACHE_POSTS_CATALOG
+    }, allEntries = true)
     @Transactional
     public void deleteJourney(String id) {
         LearningJourney journey = journeyRepository.findById(id)
@@ -263,51 +310,97 @@ public class LearningJourneyService {
         }
     }
 
+    private List<LearningJourneyResponse> mapJourneysWithChapters(List<LearningJourney> journeys) {
+        if (journeys == null || journeys.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> journeyIds = journeys.stream()
+                .map(LearningJourney::getId)
+                .collect(Collectors.toList());
+
+        Map<String, List<JourneyChapterView>> chaptersByJourneyId = readingPostRepository
+                .findPublishedChapterViewsByJourneyIds(journeyIds)
+                .stream()
+                .collect(Collectors.groupingBy(JourneyChapterView::getJourneyId));
+
+        return journeys.stream()
+                .map(j -> buildJourneyResponse(
+                        j,
+                        buildChapterDtos(chaptersByJourneyId.getOrDefault(j.getId(), Collections.emptyList()))
+                ))
+                .collect(Collectors.toList());
+    }
+
     public LearningJourneyResponse toResponse(LearningJourney journey) {
-        List<LearningJourneyResponse.ChapterSummaryDto> chapterDtos = Collections.emptyList();
+        List<JourneyChapterView> views = Collections.emptyList();
         if (journey.getChapters() != null && !journey.getChapters().isEmpty()) {
-            Map<String, List<ReadingPost>> grouped = journey.getChapters().stream()
+            views = journey.getChapters().stream()
                     .filter(p -> p.getStatus() == null || "published".equalsIgnoreCase(p.getStatus()))
-                    .collect(Collectors.groupingBy(
-                            p -> p.getChapterOrder() != null ? "order-" + p.getChapterOrder()
-                                    : (p.getTopicGroup() != null && !p.getTopicGroup().isBlank()
-                                            ? "group-" + p.getTopicGroup() : "id-" + p.getId()),
-                            LinkedHashMap::new,
-                            Collectors.toList()
-                    ));
+                    .map(p -> new JourneyChapterView(
+                            p.getId(),
+                            journey.getId(),
+                            p.getChapterOrder(),
+                            p.getTopicGroup(),
+                            p.getTitleEn(),
+                            p.getTitleVi(),
+                            p.getSummary(),
+                            p.getReadTime(),
+                            p.getLevel(),
+                            p.getImageUrl()
+                    ))
+                    .collect(Collectors.toList());
+        }
+        return buildJourneyResponse(journey, buildChapterDtos(views));
+    }
 
-            List<LearningJourneyResponse.ChapterSummaryDto> list = new ArrayList<>();
-            for (Map.Entry<String, List<ReadingPost>> entry : grouped.entrySet()) {
-                List<ReadingPost> groupPosts = entry.getValue();
-                if (groupPosts.isEmpty()) continue;
-
-                ReadingPost rep = groupPosts.stream()
-                        .filter(p -> p.getLevel() == CefrLevel.B1 || p.getLevel() == CefrLevel.B2)
-                        .findFirst()
-                        .orElse(groupPosts.get(0));
-
-                int minOrder = groupPosts.stream()
-                        .map(ReadingPost::getChapterOrder)
-                        .filter(Objects::nonNull)
-                        .min(Integer::compareTo)
-                        .orElse(999);
-
-                list.add(LearningJourneyResponse.ChapterSummaryDto.builder()
-                        .id(rep.getId())
-                        .chapterOrder(minOrder != 999 ? minOrder : (list.size() + 1))
-                        .titleEn(rep.getTitleEn())
-                        .titleVi(rep.getTitleVi())
-                        .summary(rep.getSummary())
-                        .readTime(rep.getReadTime())
-                        .level(rep.getLevel() != null ? rep.getLevel().name() : "B1")
-                        .imageUrl(rep.getImageUrl())
-                        .build());
-            }
-
-            list.sort(Comparator.comparing(c -> c.getChapterOrder() != null ? c.getChapterOrder() : 999));
-            chapterDtos = list;
+    private List<LearningJourneyResponse.ChapterSummaryDto> buildChapterDtos(List<JourneyChapterView> views) {
+        if (views == null || views.isEmpty()) {
+            return Collections.emptyList();
         }
 
+        Map<String, List<JourneyChapterView>> grouped = views.stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getChapterOrder() != null ? "order-" + p.getChapterOrder()
+                                : (p.getTopicGroup() != null && !p.getTopicGroup().isBlank()
+                                        ? "group-" + p.getTopicGroup() : "id-" + p.getId()),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<LearningJourneyResponse.ChapterSummaryDto> list = new ArrayList<>();
+        for (List<JourneyChapterView> groupPosts : grouped.values()) {
+            if (groupPosts.isEmpty()) continue;
+
+            JourneyChapterView rep = groupPosts.stream()
+                    .filter(p -> p.getLevel() == CefrLevel.B1 || p.getLevel() == CefrLevel.B2)
+                    .findFirst()
+                    .orElse(groupPosts.get(0));
+
+            int minOrder = groupPosts.stream()
+                    .map(JourneyChapterView::getChapterOrder)
+                    .filter(Objects::nonNull)
+                    .min(Integer::compareTo)
+                    .orElse(999);
+
+            list.add(LearningJourneyResponse.ChapterSummaryDto.builder()
+                    .id(rep.getId())
+                    .chapterOrder(minOrder != 999 ? minOrder : (list.size() + 1))
+                    .titleEn(rep.getTitleEn())
+                    .titleVi(rep.getTitleVi())
+                    .summary(rep.getSummary())
+                    .readTime(rep.getReadTime())
+                    .level(rep.getLevel() != null ? rep.getLevel().name() : "B1")
+                    .imageUrl(rep.getImageUrl())
+                    .build());
+        }
+
+        list.sort(Comparator.comparing(c -> c.getChapterOrder() != null ? c.getChapterOrder() : 999));
+        return list;
+    }
+
+    private LearningJourneyResponse buildJourneyResponse(
+            LearningJourney journey,
+            List<LearningJourneyResponse.ChapterSummaryDto> chapterDtos) {
         return LearningJourneyResponse.builder()
                 .id(journey.getId())
                 .titleEn(journey.getTitleEn())

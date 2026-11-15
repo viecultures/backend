@@ -1,6 +1,8 @@
 package com.viecultures.backend.repository;
 
 import com.viecultures.backend.dto.CatalogPostView;
+import com.viecultures.backend.dto.EntityOptionDto;
+import com.viecultures.backend.dto.JourneyChapterView;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.ReadingPost;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -57,4 +60,19 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
 
     @Query("SELECT COALESCE(NULLIF(p.region, ''), 'Toàn quốc'), COUNT(p) FROM ReadingPost p GROUP BY COALESCE(NULLIF(p.region, ''), 'Toàn quốc')")
     List<Object[]> countGroupByRegion();
+
+    @Query("SELECT new com.viecultures.backend.dto.JourneyChapterView(" +
+           "p.id, p.journey.id, p.chapterOrder, p.topicGroup, " +
+           "p.titleEn, p.titleVi, p.summary, p.readTime, p.level, p.imageUrl) " +
+           "FROM ReadingPost p " +
+           "WHERE p.journey.id IN :journeyIds " +
+           "AND (p.status IS NULL OR LOWER(p.status) = 'published') " +
+           "ORDER BY p.chapterOrder ASC")
+    List<JourneyChapterView> findPublishedChapterViewsByJourneyIds(@Param("journeyIds") Collection<String> journeyIds);
+
+    @Query("SELECT new com.viecultures.backend.dto.EntityOptionDto(p.id, p.titleVi, p.titleEn) " +
+           "FROM ReadingPost p " +
+           "WHERE (p.status IS NULL OR LOWER(p.status) = 'published') " +
+           "ORDER BY p.titleVi ASC")
+    List<EntityOptionDto> findAllPostOptions();
 }

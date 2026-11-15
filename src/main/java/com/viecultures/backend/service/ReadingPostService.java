@@ -1,8 +1,10 @@
 package com.viecultures.backend.service;
 
+import com.viecultures.backend.config.CacheConfig;
 import com.viecultures.backend.dto.CatalogLessonDto;
 import com.viecultures.backend.dto.CatalogPostView;
 import com.viecultures.backend.dto.CatalogResponse;
+import com.viecultures.backend.dto.EntityOptionDto;
 import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
 import com.viecultures.backend.entity.CefrLevel;
@@ -18,6 +20,8 @@ import com.viecultures.backend.repository.VocabItemRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +45,12 @@ public class ReadingPostService {
         return getPosts(topic, level, query, region, topicGroup, null, null, null, false);
     }
 
+    @Cacheable(CacheConfig.CACHE_POST_OPTIONS)
     @Transactional(readOnly = true)
+    public List<EntityOptionDto> getPostOptions() {
+        return readingPostRepository.findAllPostOptions();
+    }
+
     public List<ReadingPostResponse> getPosts(String topic, CefrLevel level, String query, String region, String topicGroup, Boolean standalone, String journeyId, String provinceId) {
         return getPosts(topic, level, query, region, topicGroup, standalone, journeyId, provinceId, false);
     }
@@ -127,6 +136,12 @@ public class ReadingPostService {
         return toResponse(post, true);
     }
 
+    @CacheEvict(value = {
+            CacheConfig.CACHE_POST_OPTIONS,
+            CacheConfig.CACHE_POSTS_CATALOG,
+            CacheConfig.CACHE_JOURNEYS_LIST,
+            CacheConfig.CACHE_JOURNEY_BY_ID
+    }, allEntries = true)
     @Transactional
     public ReadingPostResponse createPost(ReadingPostRequest request) {
         ReadingPost post = ReadingPost.builder()
@@ -205,6 +220,12 @@ public class ReadingPostService {
         return toResponse(saved, true);
     }
 
+    @CacheEvict(value = {
+            CacheConfig.CACHE_POST_OPTIONS,
+            CacheConfig.CACHE_POSTS_CATALOG,
+            CacheConfig.CACHE_JOURNEYS_LIST,
+            CacheConfig.CACHE_JOURNEY_BY_ID
+    }, allEntries = true)
     @Transactional
     public ReadingPostResponse updatePost(String id, ReadingPostRequest request) {
         ReadingPost post = readingPostRepository.findById(id)
@@ -297,6 +318,12 @@ public class ReadingPostService {
         return toResponse(updated, true);
     }
 
+    @CacheEvict(value = {
+            CacheConfig.CACHE_POST_OPTIONS,
+            CacheConfig.CACHE_POSTS_CATALOG,
+            CacheConfig.CACHE_JOURNEYS_LIST,
+            CacheConfig.CACHE_JOURNEY_BY_ID
+    }, allEntries = true)
     @Transactional
     public void deletePost(String id) {
         if (!readingPostRepository.existsById(id)) {
@@ -443,6 +470,7 @@ public class ReadingPostService {
         return getCatalog(topic, level, query, region, sortBy, null, page, size);
     }
 
+    @Cacheable(CacheConfig.CACHE_POSTS_CATALOG)
     @Transactional(readOnly = true)
     public CatalogResponse getCatalog(String topic, String level, String query, String region, String sortBy, Boolean standalone, Integer page, Integer size) {
         List<CatalogPostView> allPosts = readingPostRepository.findCatalogPostViews(standalone);
