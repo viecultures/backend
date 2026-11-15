@@ -16,6 +16,8 @@ public class SystemAiSettingsDto {
 
     private String geminiChatModel;
     private String geminiTranslateModel;
+    private String geminiTtsModel;
+    private String geminiSttModel;
     private String azureSpeechRegion;
     private String activeTtsProvider;
     private List<String> availableGeminiModels;

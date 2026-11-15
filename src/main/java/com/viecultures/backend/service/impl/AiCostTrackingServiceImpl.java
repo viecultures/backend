@@ -6,6 +6,7 @@ import com.viecultures.backend.service.AiCostTrackingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -23,7 +24,7 @@ public class AiCostTrackingServiceImpl implements AiCostTrackingService {
     private static final BigDecimal AZURE_SPEECH_CHAR_RATE = new BigDecimal("0.000015000");
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AiUsageLog recordUsage(
             Long configId,
             String provider,
@@ -53,10 +54,15 @@ public class AiCostTrackingServiceImpl implements AiCostTrackingService {
                 .httpStatus(httpStatus)
                 .build();
 
-        AiUsageLog saved = aiUsageLogRepository.save(usageLog);
-        log.debug("Ghi nhan su dung AI: id={}, provider={}, feature={}, costUsd={}, latencyMs={}",
-                saved.getId(), safeProvider, safeFeature, estimatedCost, latencyMs);
-        return saved;
+        try {
+            AiUsageLog saved = aiUsageLogRepository.save(usageLog);
+            log.debug("Ghi nhan su dung AI: id={}, provider={}, feature={}, costUsd={}, latencyMs={}",
+                    saved.getId(), safeProvider, safeFeature, estimatedCost, latencyMs);
+            return saved;
+        } catch (Exception ex) {
+            log.warn("Khong the luu ban ghi AI usage log (provider={}, feature={}): {}", safeProvider, safeFeature, ex.getMessage());
+            return usageLog;
+        }
     }
 
     @Override

@@ -12,4 +12,5 @@ public interface UserVocabProgressRepository extends JpaRepository<UserVocabProg
     List<UserVocabProgress> findByUserIdAndStatus(String userId, VocabProgressStatus status);
     List<UserVocabProgress> findByUserId(String userId);
     long countByUserId(String userId);
+    long countByUserIdAndStatus(String userId, VocabProgressStatus status);
 }

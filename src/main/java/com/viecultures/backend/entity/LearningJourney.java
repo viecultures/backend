@@ -38,6 +38,9 @@ public class LearningJourney {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "description_vi", columnDefinition = "TEXT")
+    private String descriptionVi;
+
     @Column(name = "image_url")
     private String imageUrl;
 

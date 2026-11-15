@@ -7,7 +7,11 @@ import org.springframework.data.domain.Pageable;
 
 public interface AdminVocabService {
 
-    Page<DictionaryLookupDto> getAdminVocabularies(String search, String level, Pageable pageable);
+    default Page<DictionaryLookupDto> getAdminVocabularies(String search, String level, Pageable pageable) {
+        return getAdminVocabularies(search, level, null, pageable);
+    }
+
+    Page<DictionaryLookupDto> getAdminVocabularies(String search, String level, String postId, Pageable pageable);
 
     DictionaryLookupDto getVocabularyById(String id);
 

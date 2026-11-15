@@ -9,6 +9,7 @@ import com.viecultures.backend.service.DynamicApiKeyService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -21,10 +22,14 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
 
     public static final String KEY_GEMINI_CHAT_MODEL = "gemini_chat_model";
     public static final String KEY_GEMINI_TRANSLATE_MODEL = "gemini_translate_model";
+    public static final String KEY_GEMINI_TTS_MODEL = "gemini_tts_model";
+    public static final String KEY_GEMINI_STT_MODEL = "gemini_stt_model";
     public static final String KEY_AZURE_SPEECH_REGION = "azure_speech_region";
     public static final String KEY_ACTIVE_TTS_PROVIDER = "active_tts_provider";
 
-    public static final String DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+    public static final String DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
+    public static final String DEFAULT_GEMINI_TTS_MODEL = "gemini-3.8-flash-tts";
+    public static final String DEFAULT_GEMINI_STT_MODEL = "gemini-3.5-transcribe";
     public static final String DEFAULT_AZURE_REGION = "southeastasia";
     public static final String DEFAULT_TTS_PROVIDER = "azure";
 
@@ -37,6 +42,9 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
 
     @Value("${gemini.api.key:}")
     private String defaultGeminiApiKey;
+
+
+
 
     @Value("${azure.speech.key:}")
     private String defaultAzureSpeechKey;
@@ -121,6 +129,38 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
 
     @Override
     @Transactional(readOnly = true)
+    public String getActiveGeminiTtsModel() {
+        Optional<SystemAiSetting> setting = systemAiSettingRepository.findBySettingKey(KEY_GEMINI_TTS_MODEL);
+        if (setting.isPresent() && setting.get().getSettingValue() != null && !setting.get().getSettingValue().isBlank()) {
+            return setting.get().getSettingValue().trim();
+        }
+
+        AiServiceConfig config = getActiveConfig("GEMINI", "TTS");
+        if (config != null && config.getModelName() != null && !config.getModelName().isBlank()) {
+            return config.getModelName().trim();
+        }
+
+        return DEFAULT_GEMINI_TTS_MODEL;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String getActiveGeminiSttModel() {
+        Optional<SystemAiSetting> setting = systemAiSettingRepository.findBySettingKey(KEY_GEMINI_STT_MODEL);
+        if (setting.isPresent() && setting.get().getSettingValue() != null && !setting.get().getSettingValue().isBlank()) {
+            return setting.get().getSettingValue().trim();
+        }
+
+        AiServiceConfig config = getActiveConfig("GEMINI", "STT");
+        if (config != null && config.getModelName() != null && !config.getModelName().isBlank()) {
+            return config.getModelName().trim();
+        }
+
+        return DEFAULT_GEMINI_STT_MODEL;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public String getActiveAzureRegion() {
         Optional<SystemAiSetting> setting = systemAiSettingRepository.findBySettingKey(KEY_AZURE_SPEECH_REGION);
         if (setting.isPresent() && setting.get().getSettingValue() != null && !setting.get().getSettingValue().isBlank()) {
@@ -155,48 +195,60 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markCooldown(Long configId, int statusCode, int durationMinutes) {
         if (configId == null) {
             return;
         }
-        configRepository.findById(configId).ifPresent(config -> {
-            int cooldownDuration = durationMinutes > 0 ? durationMinutes : (statusCode == 429 ? 15 : 60);
-            LocalDateTime cooldownUntil = LocalDateTime.now().plusMinutes(cooldownDuration);
-            config.setStatus("COOLDOWN");
-            config.setCooldownUntil(cooldownUntil);
-            configRepository.save(config);
-            log.warn("Config ID {} chuyen sang trang thai COOLDOWN den {} (HTTP {})", configId, cooldownUntil, statusCode);
-        });
+        try {
+            configRepository.findById(configId).ifPresent(config -> {
+                int cooldownDuration = durationMinutes > 0 ? durationMinutes : (statusCode == 429 ? 15 : 60);
+                LocalDateTime cooldownUntil = LocalDateTime.now().plusMinutes(cooldownDuration);
+                config.setStatus("COOLDOWN");
+                config.setCooldownUntil(cooldownUntil);
+                configRepository.save(config);
+                log.warn("Config ID {} chuyen sang trang thai COOLDOWN den {} (HTTP {})", configId, cooldownUntil, statusCode);
+            });
+        } catch (Exception ex) {
+            log.warn("Khong the cap nhat COOLDOWN cho configId {}: {}", configId, ex.getMessage());
+        }
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markHealthy(Long configId) {
         if (configId == null) {
             return;
         }
-        configRepository.findById(configId).ifPresent(config -> {
-            if (!"HEALTHY".equalsIgnoreCase(config.getStatus()) || config.getCooldownUntil() != null) {
-                config.setStatus("HEALTHY");
-                config.setCooldownUntil(null);
-                configRepository.save(config);
-                log.info("Config ID {} da duoc khoi phuc trang thai HEALTHY", configId);
-            }
-        });
+        try {
+            configRepository.findById(configId).ifPresent(config -> {
+                if (!"HEALTHY".equalsIgnoreCase(config.getStatus()) || config.getCooldownUntil() != null) {
+                    config.setStatus("HEALTHY");
+                    config.setCooldownUntil(null);
+                    configRepository.save(config);
+                    log.info("Config ID {} da duoc khoi phuc trang thai HEALTHY", configId);
+                }
+            });
+        } catch (Exception ex) {
+            log.warn("Khong the cap nhat HEALTHY cho configId {}: {}", configId, ex.getMessage());
+        }
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markError(Long configId, String errorMessage) {
         if (configId == null) {
             return;
         }
-        configRepository.findById(configId).ifPresent(config -> {
-            config.setStatus("ERROR");
-            configRepository.save(config);
-            log.error("Config ID {} duoc danh dau trang thai ERROR: {}", configId, errorMessage);
-        });
+        try {
+            configRepository.findById(configId).ifPresent(config -> {
+                config.setStatus("ERROR");
+                configRepository.save(config);
+                log.error("Config ID {} duoc danh dau trang thai ERROR: {}", configId, errorMessage);
+            });
+        } catch (Exception ex) {
+            log.warn("Khong the cap nhat ERROR cho configId {}: {}", configId, ex.getMessage());
+        }
     }
 
     private Optional<AiServiceConfig> resolveActiveConfig(String provider, String serviceType) {
@@ -209,6 +261,27 @@ public class DynamicApiKeyServiceImpl implements DynamicApiKeyService {
         LocalDateTime now = LocalDateTime.now();
 
         for (AiServiceConfig config : configs) {
+            if ("COOLDOWN".equalsIgnoreCase(config.getStatus())) {
+                if (config.getCooldownUntil() != null && now.isAfter(config.getCooldownUntil())) {
+                    config.setStatus("HEALTHY");
+                    config.setCooldownUntil(null);
+                    configRepository.save(config);
+                    return Optional.of(config);
+                }
+                continue;
+            }
+
+            if ("ERROR".equalsIgnoreCase(config.getStatus())) {
+                continue;
+            }
+
+            return Optional.of(config);
+        }
+
+        List<AiServiceConfig> providerConfigs = configRepository
+                .findByProviderAndActiveTrueOrderByPriorityAsc(safeProvider);
+
+        for (AiServiceConfig config : providerConfigs) {
             if ("COOLDOWN".equalsIgnoreCase(config.getStatus())) {
                 if (config.getCooldownUntil() != null && now.isAfter(config.getCooldownUntil())) {
                     config.setStatus("HEALTHY");

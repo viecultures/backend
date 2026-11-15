@@ -25,17 +25,18 @@ public class GeminiVoiceService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final DynamicApiKeyService dynamicApiKeyService;
 
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
-    @Value("${gemini.model}")
-    private String geminiModel;
 
-    @Value("${gemini.api.url}")
+
+
+    @Value("${gemini.api.url:https://generativelanguage.googleapis.com/v1beta/models}")
     private String geminiApiUrl;
 
-    @Value("${audio.output.dir}")
+    @Value("${audio.output.dir:../frontend/public/audio}")
     private String audioOutputDir;
 
     // Supported Gemini TTS models for failover across Gemini API quotas
@@ -45,13 +46,38 @@ public class GeminiVoiceService {
             "gemini-3.1-flash-tts-preview",
             "gemini-3.8-flash");
 
-    public GeminiVoiceService(RestTemplate restTemplate, ObjectMapper objectMapper) {
+    public GeminiVoiceService(RestTemplate restTemplate, ObjectMapper objectMapper, DynamicApiKeyService dynamicApiKeyService) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.dynamicApiKeyService = dynamicApiKeyService;
     }
 
     public String getGeminiApiKey() {
-        return geminiApiKey;
+        if (dynamicApiKeyService != null) {
+            String dbKey = dynamicApiKeyService.getActiveKey("GEMINI", "LIVE");
+            if (dbKey != null && !dbKey.isBlank()) {
+                return dbKey.trim();
+            }
+            dbKey = dynamicApiKeyService.getActiveKey("GEMINI", "CHAT");
+            if (dbKey != null && !dbKey.isBlank()) {
+                return dbKey.trim();
+            }
+            dbKey = dynamicApiKeyService.getActiveKey("GEMINI", "TTS");
+            if (dbKey != null && !dbKey.isBlank()) {
+                return dbKey.trim();
+            }
+        }
+        return (geminiApiKey != null && !geminiApiKey.isBlank()) ? geminiApiKey.trim() : null;
+    }
+
+    public String getActiveGeminiVoiceModel() {
+        if (dynamicApiKeyService != null) {
+            String dbModel = dynamicApiKeyService.getActiveGeminiTtsModel();
+            if (dbModel != null && !dbModel.isBlank()) {
+                return dbModel.trim();
+            }
+        }
+        return "gemini-3.8-flash-tts";
     }
 
     /**
@@ -80,7 +106,7 @@ public class GeminiVoiceService {
 
         // Try primary model first, followed by other Gemini models if quota exceeded
         List<String> modelsToTry = new ArrayList<>();
-        modelsToTry.add(geminiModel);
+        modelsToTry.add(getActiveGeminiVoiceModel());
         for (String m : GEMINI_MODELS) {
             if (!modelsToTry.contains(m)) {
                 modelsToTry.add(m);
@@ -122,7 +148,7 @@ public class GeminiVoiceService {
         String resolvedVoice = mapVoiceToGemini(voiceName);
 
         List<String> modelsToTry = new ArrayList<>();
-        modelsToTry.add(geminiModel);
+        modelsToTry.add(getActiveGeminiVoiceModel());
         for (String m : GEMINI_MODELS) {
             if (!modelsToTry.contains(m)) {
                 modelsToTry.add(m);
@@ -202,7 +228,11 @@ public class GeminiVoiceService {
                 "contents", List.of(contentItem),
                 "generationConfig", generationConfig);
 
-        String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, geminiApiKey);
+        String effectiveApiKey = getGeminiApiKey();
+        if (effectiveApiKey == null || effectiveApiKey.isBlank()) {
+            throw new IllegalStateException("Không tìm thấy Google Gemini API Key trong hệ thống (database hoặc cấu hình).");
+        }
+        String endpoint = String.format("%s/%s:generateContent?key=%s", geminiApiUrl, model, effectiveApiKey);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -319,14 +349,27 @@ public class GeminiVoiceService {
     }
 
     private Path resolveOutputDir() throws Exception {
-        Path path = Paths.get(audioOutputDir);
-        if (!path.isAbsolute()) {
-            path = Paths.get("").toAbsolutePath().resolve(path).normalize();
+        try {
+            Path path = Paths.get(audioOutputDir);
+            if (!path.isAbsolute()) {
+                path = Paths.get("").toAbsolutePath().resolve(path).normalize();
+            }
+            String pathStr = path.toString().replace("\\", "/");
+            if (pathStr.startsWith("/frontend") || !Files.isWritable(path.getRoot() != null ? path.getRoot() : Paths.get("."))) {
+                path = Paths.get(System.getProperty("java.io.tmpdir"), "viecultures-audio");
+            }
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+            }
+            return path;
+        } catch (Exception e) {
+            log.warn("Không thể dùng đường dẫn audioOutputDir {}: {}. Chuyển sang thư mục tạm hệ thống.", audioOutputDir, e.getMessage());
+            Path fallback = Paths.get(System.getProperty("java.io.tmpdir"), "viecultures-audio");
+            if (!Files.exists(fallback)) {
+                Files.createDirectories(fallback);
+            }
+            return fallback;
         }
-        if (!Files.exists(path)) {
-            Files.createDirectories(path);
-        }
-        return path;
     }
 
     private void saveAudioFile(byte[] audioBytes, String outputFilename) throws Exception {

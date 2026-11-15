@@ -62,6 +62,9 @@ public class ReadingPost {
     @Column(columnDefinition = "TEXT")
     private String summary;
 
+    @Column(name = "summary_vi", columnDefinition = "TEXT")
+    private String summaryVi;
+
     @Column(name = "content_en", columnDefinition = "TEXT")
     private String contentEn;
 

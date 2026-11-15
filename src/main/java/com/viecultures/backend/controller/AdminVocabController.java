@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.annotation.AuditLog;
 import com.viecultures.backend.dto.DictionaryLookupDto;
 import com.viecultures.backend.dto.admin.AdminVocabRequest;
 import com.viecultures.backend.service.AdminVocabService;
@@ -30,13 +31,15 @@ public class AdminVocabController {
     private final AdminVocabService adminVocabService;
 
     @Operation(summary = "Lay danh sach tu vung phan trang & loc",
-               description = "Ho tro tim kiem theo tu khoa (word, viMeaning), loc theo cap do (A1, A2, B1, B2, C1, C2) va phan trang.")
+               description = "Ho tro tim kiem theo tu khoa (word, viMeaning), loc theo cap do (A1, A2, B1, B2, C1, C2), loc theo bai doc (postId) va phan trang.")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<DictionaryLookupDto>>> getVocabularies(
             @Parameter(description = "Tu khoa tim kiem theo tu tieng Anh hoac nghia tieng Viet")
             @RequestParam(required = false) String search,
             @Parameter(description = "Loc theo cap do CEFR (A1, A2, B1, B2, C1, C2 hoac ALL)")
             @RequestParam(required = false) String level,
+            @Parameter(description = "Loc theo ID bai doc (ReadingPost ID)")
+            @RequestParam(required = false) String postId,
             @Parameter(description = "So trang, bat dau tu 0")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "So luong ban ghi tren moi trang (1-100)")
@@ -55,7 +58,7 @@ public class AdminVocabController {
                 : "createdAt";
 
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(sortDirection, safeSortBy));
-        Page<DictionaryLookupDto> result = adminVocabService.getAdminVocabularies(search, level, pageable);
+        Page<DictionaryLookupDto> result = adminVocabService.getAdminVocabularies(search, level, postId, pageable);
 
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
@@ -72,6 +75,7 @@ public class AdminVocabController {
 
     @Operation(summary = "Them moi hoac upsert tu vung",
                description = "Them moi tu vung hoac tu dong cap nhat neu tu vung da ton tai trong CSDL.")
+    @AuditLog(action = "CREATE_VOCAB", entity = "VOCABULARY", description = "Thêm mới hoặc upsert từ vựng")
     @PostMapping
     public ResponseEntity<ApiResponse<DictionaryLookupDto>> createVocabulary(
             @Valid @RequestBody AdminVocabRequest request) {
@@ -83,6 +87,7 @@ public class AdminVocabController {
 
     @Operation(summary = "Cap nhat thong tin tu vung theo ID",
                description = "Cap nhat nghia, phien am, vi du ngu canh, trinh do va am thanh cua tu vung.")
+    @AuditLog(action = "UPDATE_VOCAB", entity = "VOCABULARY", description = "Cập nhật thông tin từ vựng")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<DictionaryLookupDto>> updateVocabulary(
             @Parameter(description = "ID cua tu vung can cap nhat")
@@ -95,6 +100,7 @@ public class AdminVocabController {
 
     @Operation(summary = "Xoa tu vung khoi he thong theo ID",
                description = "Xoa hoan toan ban ghi tu vung khoi he thong tu dien.")
+    @AuditLog(action = "DELETE_VOCAB", entity = "VOCABULARY", description = "Xóa từ vựng khỏi hệ thống")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteVocabulary(
             @Parameter(description = "ID cua tu vung can xoa")

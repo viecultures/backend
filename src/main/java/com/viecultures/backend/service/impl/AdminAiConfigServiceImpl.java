@@ -35,13 +35,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminAiConfigServiceImpl implements AdminAiConfigService {
 
-    private static final List<String> AVAILABLE_GEMINI_MODELS = List.of(
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-1.5-pro",
-            "gemini-flash-latest"
-    );
-
     private static final List<Map<String, String>> AVAILABLE_AZURE_REGIONS = List.of(
             Map.of("id", "southeastasia", "name", "Đông Nam Á (Singapore)"),
             Map.of("id", "eastasia", "name", "Đông Á (Hồng Kông)"),
@@ -116,6 +109,10 @@ public class AdminAiConfigServiceImpl implements AdminAiConfigService {
 
         if (request.getKeyLabel() != null && !request.getKeyLabel().trim().isEmpty()) {
             config.setKeyLabel(request.getKeyLabel().trim());
+        }
+
+        if (request.getServiceType() != null && !request.getServiceType().isBlank()) {
+            config.setServiceType(request.getServiceType().trim().toUpperCase());
         }
 
         if (request.getApiKey() != null && !request.getApiKey().trim().isEmpty()) {
@@ -197,16 +194,30 @@ public class AdminAiConfigServiceImpl implements AdminAiConfigService {
             }
         }
 
+        String safeProvider = (provider != null) ? provider.trim().toUpperCase() : "GEMINI";
+
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            if ("GEMINI".equals(safeProvider)) {
+                apiKey = dynamicApiKeyService.getActiveKey("GEMINI", serviceType != null ? serviceType : "CHAT");
+                if (apiKey == null || apiKey.trim().isEmpty()) {
+                    apiKey = dynamicApiKeyService.getActiveKey("GEMINI", "LIVE");
+                }
+                if (apiKey == null || apiKey.trim().isEmpty()) {
+                    apiKey = dynamicApiKeyService.getActiveKey("GEMINI", "TTS");
+                }
+            } else if ("AZURE".equals(safeProvider)) {
+                apiKey = dynamicApiKeyService.getActiveKey("AZURE", "TTS");
+            }
+        }
+
         if (apiKey == null || apiKey.trim().isEmpty()) {
             return TestAiKeyResponse.builder()
                     .success(false)
                     .httpStatus(400)
                     .latencyMs(0)
-                    .message("Không có API Key để kiểm tra kết nối")
+                    .message("Chưa có API Key hoạt động nào trong hệ thống để kiểm tra mô hình.")
                     .build();
         }
-
-        String safeProvider = (provider != null) ? provider.trim().toUpperCase() : "GEMINI";
         long startTime = System.currentTimeMillis();
 
         try {
@@ -224,11 +235,21 @@ public class AdminAiConfigServiceImpl implements AdminAiConfigService {
             } else if (configId != null && statusCode == 401) {
                 dynamicApiKeyService.markError(configId, "Khoa khong hop le hoac het han (HTTP 401)");
             }
+                                String detailMsg = "Lỗi từ nhà cung cấp AI: HTTP " + statusCode;
+            if (statusCode == 404) {
+                detailMsg = "Mô hình không tồn tại trên Google AI Studio hoặc tài khoản không có quyền truy cập (HTTP 404).";
+            } else if (statusCode == 400) {
+                detailMsg = "Yêu cầu không hợp lệ hoặc định dạng mô hình không đúng (HTTP 400).";
+            } else if (statusCode == 401 || statusCode == 403) {
+                detailMsg = "API Key không hợp lệ hoặc không có quyền truy cập mô hình này (HTTP " + statusCode + ").";
+            } else if (statusCode == 429) {
+                detailMsg = "Mô hình đang bị vượt hạn ngạch (Rate Limit / Quota Exceeded - HTTP 429).";
+            }
             return TestAiKeyResponse.builder()
                     .success(false)
                     .latencyMs(latency)
                     .httpStatus(statusCode)
-                    .message("Lỗi từ nhà cung cấp AI: HTTP " + statusCode)
+                    .message(detailMsg)
                     .build();
         } catch (Exception e) {
             long latency = System.currentTimeMillis() - startTime;
@@ -321,9 +342,15 @@ public class AdminAiConfigServiceImpl implements AdminAiConfigService {
         return SystemAiSettingsDto.builder()
                 .geminiChatModel(dynamicApiKeyService.getActiveGeminiChatModel())
                 .geminiTranslateModel(dynamicApiKeyService.getActiveGeminiTranslateModel())
+                .geminiTtsModel(dynamicApiKeyService.getActiveGeminiTtsModel())
+                .geminiSttModel(dynamicApiKeyService.getActiveGeminiSttModel())
                 .azureSpeechRegion(dynamicApiKeyService.getActiveAzureRegion())
                 .activeTtsProvider(dynamicApiKeyService.getActiveTtsProvider())
-                .availableGeminiModels(AVAILABLE_GEMINI_MODELS)
+                .availableGeminiModels(configRepository.findAll().stream()
+                        .map(AiServiceConfig::getModelName)
+                        .filter(m -> m != null && !m.isBlank())
+                        .distinct()
+                        .collect(Collectors.toList()))
                 .availableAzureRegions(AVAILABLE_AZURE_REGIONS)
                 .build();
     }
@@ -338,6 +365,14 @@ public class AdminAiConfigServiceImpl implements AdminAiConfigService {
         if (request.getGeminiTranslateModel() != null && !request.getGeminiTranslateModel().isBlank()) {
             saveOrUpdateSetting(DynamicApiKeyServiceImpl.KEY_GEMINI_TRANSLATE_MODEL,
                     request.getGeminiTranslateModel().trim(), "Mô hình Gemini cho tính năng dịch thuật văn bản");
+        }
+        if (request.getGeminiTtsModel() != null && !request.getGeminiTtsModel().isBlank()) {
+            saveOrUpdateSetting(DynamicApiKeyServiceImpl.KEY_GEMINI_TTS_MODEL,
+                    request.getGeminiTtsModel().trim(), "Mô hình Gemini cho tính năng tạo giọng đọc (TTS / Voice)");
+        }
+        if (request.getGeminiSttModel() != null && !request.getGeminiSttModel().isBlank()) {
+            saveOrUpdateSetting(DynamicApiKeyServiceImpl.KEY_GEMINI_STT_MODEL,
+                    request.getGeminiSttModel().trim(), "Mô hình Gemini cho tính năng nhận diện giọng nói (STT)");
         }
         if (request.getAzureSpeechRegion() != null && !request.getAzureSpeechRegion().isBlank()) {
             saveOrUpdateSetting(DynamicApiKeyServiceImpl.KEY_AZURE_SPEECH_REGION,

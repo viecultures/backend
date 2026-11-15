@@ -2,6 +2,7 @@ package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.LearningJourneyRequest;
 import com.viecultures.backend.dto.LearningJourneyResponse;
+import com.viecultures.backend.dto.PagedLearningJourneyResponse;
 import com.viecultures.backend.service.LearningJourneyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,14 +24,21 @@ public class LearningJourneyController {
 
     private final LearningJourneyService journeyService;
 
-    @Operation(summary = "Lấy danh sách hành trình học", description = "Lọc theo vùng miền (region), tỉnh thành (provinceId), chủ đề (theme), trạng thái (status), từ khóa (query)")
+    @Operation(summary = "Lấy danh sách hành trình học", description = "Lọc theo vùng miền (region), tỉnh thành (provinceId), chủ đề (theme), trạng thái (status), từ khóa (query), hỗ trợ phân trang khi truyền page")
     @GetMapping
-    public ResponseEntity<List<LearningJourneyResponse>> getJourneys(
+    public ResponseEntity<?> getJourneys(
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String provinceId,
             @RequestParam(required = false) String theme,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String query) {
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null) {
+            int pageSize = (size != null && size > 0) ? size : 6;
+            PagedLearningJourneyResponse paged = journeyService.getPagedJourneys(region, provinceId, theme, status, query, page, pageSize);
+            return ResponseEntity.ok(paged);
+        }
         List<LearningJourneyResponse> journeys = journeyService.getJourneys(region, provinceId, theme, status, query);
         return ResponseEntity.ok(journeys);
     }

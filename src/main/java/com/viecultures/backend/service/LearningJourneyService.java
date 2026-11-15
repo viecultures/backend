@@ -2,6 +2,8 @@ package com.viecultures.backend.service;
 
 import com.viecultures.backend.dto.LearningJourneyRequest;
 import com.viecultures.backend.dto.LearningJourneyResponse;
+import com.viecultures.backend.dto.PagedLearningJourneyResponse;
+import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.LearningJourney;
 import com.viecultures.backend.entity.ReadingPost;
 import com.viecultures.backend.repository.LearningJourneyRepository;
@@ -9,6 +11,9 @@ import com.viecultures.backend.repository.ReadingPostRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -59,12 +64,11 @@ public class LearningJourneyService {
         }
     }
 
-    @Transactional
-    public List<LearningJourneyResponse> getJourneys(String region, String provinceId, String theme, String status, String query) {
-        // Đồng bộ các hành trình đến hạn xuất bản trước khi lọc và trả kết quả
-        autoPublishScheduledJourneys();
-
-        Specification<LearningJourney> spec = (root, q, cb) -> {
+    private Specification<LearningJourney> buildSpecification(String region, String provinceId, String theme, String status, String query) {
+        return (root, q, cb) -> {
+            if (q != null) {
+                q.distinct(true);
+            }
             List<Predicate> predicates = new ArrayList<>();
 
             if (region != null && !region.isBlank() && !region.equalsIgnoreCase("all")) {
@@ -88,16 +92,42 @@ public class LearningJourneyService {
                 Predicate matchEn = cb.like(cb.lower(root.get("titleEn")), pattern);
                 Predicate matchVi = cb.like(cb.lower(root.get("titleVi")), pattern);
                 Predicate matchDesc = cb.like(cb.lower(root.get("description")), pattern);
-                predicates.add(cb.or(matchEn, matchVi, matchDesc));
+                Predicate matchDescVi = cb.like(cb.lower(root.get("descriptionVi")), pattern);
+                predicates.add(cb.or(matchEn, matchVi, matchDesc, matchDescVi));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
 
+    @Transactional(readOnly = true)
+    public List<LearningJourneyResponse> getJourneys(String region, String provinceId, String theme, String status, String query) {
+        Specification<LearningJourney> spec = buildSpecification(region, provinceId, theme, status, query);
         List<LearningJourney> journeys = journeyRepository.findAll(spec);
         return journeys.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public PagedLearningJourneyResponse getPagedJourneys(String region, String provinceId, String theme, String status, String query, int page, int size) {
+        Specification<LearningJourney> spec = buildSpecification(region, provinceId, theme, status, query);
+        int validPage = Math.max(0, page);
+        int validSize = size > 0 ? size : 6;
+        Pageable pageable = PageRequest.of(validPage, validSize);
+        Page<LearningJourney> journeyPage = journeyRepository.findAll(spec, pageable);
+
+        List<LearningJourneyResponse> items = journeyPage.getContent().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+
+        return PagedLearningJourneyResponse.builder()
+                .items(items)
+                .page(journeyPage.getNumber())
+                .size(journeyPage.getSize())
+                .totalElements(journeyPage.getTotalElements())
+                .totalPages(journeyPage.getTotalPages())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -134,6 +164,7 @@ public class LearningJourneyService {
                 .provinceId(request.getProvinceId() != null ? request.getProvinceId().trim() : "")
                 .region(request.getRegion() != null ? request.getRegion().toLowerCase().trim() : "north")
                 .description(request.getDescription())
+                .descriptionVi(request.getDescriptionVi())
                 .imageUrl(request.getImageUrl())
                 .status(targetStatus)
                 .scheduledPublishAt(scheduledPublishAt)
@@ -159,6 +190,9 @@ public class LearningJourneyService {
         if (request.getProvinceId() != null) journey.setProvinceId(request.getProvinceId().trim());
         if (request.getRegion() != null) journey.setRegion(request.getRegion().toLowerCase().trim());
         journey.setDescription(request.getDescription());
+        if (request.getDescriptionVi() != null) {
+            journey.setDescriptionVi(request.getDescriptionVi());
+        }
         journey.setImageUrl(request.getImageUrl());
         if (request.getStatus() != null) {
             String targetStatus = request.getStatus().toLowerCase().trim();
@@ -231,21 +265,47 @@ public class LearningJourneyService {
 
     public LearningJourneyResponse toResponse(LearningJourney journey) {
         List<LearningJourneyResponse.ChapterSummaryDto> chapterDtos = Collections.emptyList();
-        if (journey.getChapters() != null) {
-            chapterDtos = journey.getChapters().stream()
+        if (journey.getChapters() != null && !journey.getChapters().isEmpty()) {
+            Map<String, List<ReadingPost>> grouped = journey.getChapters().stream()
                     .filter(p -> p.getStatus() == null || "published".equalsIgnoreCase(p.getStatus()))
-                    .sorted(Comparator.comparing(p -> p.getChapterOrder() != null ? p.getChapterOrder() : 999))
-                    .map(p -> LearningJourneyResponse.ChapterSummaryDto.builder()
-                            .id(p.getId())
-                            .chapterOrder(p.getChapterOrder())
-                            .titleEn(p.getTitleEn())
-                            .titleVi(p.getTitleVi())
-                            .summary(p.getSummary())
-                            .readTime(p.getReadTime())
-                            .level(p.getLevel() != null ? p.getLevel().name() : "B1")
-                            .imageUrl(p.getImageUrl())
-                            .build())
-                    .collect(Collectors.toList());
+                    .collect(Collectors.groupingBy(
+                            p -> p.getChapterOrder() != null ? "order-" + p.getChapterOrder()
+                                    : (p.getTopicGroup() != null && !p.getTopicGroup().isBlank()
+                                            ? "group-" + p.getTopicGroup() : "id-" + p.getId()),
+                            LinkedHashMap::new,
+                            Collectors.toList()
+                    ));
+
+            List<LearningJourneyResponse.ChapterSummaryDto> list = new ArrayList<>();
+            for (Map.Entry<String, List<ReadingPost>> entry : grouped.entrySet()) {
+                List<ReadingPost> groupPosts = entry.getValue();
+                if (groupPosts.isEmpty()) continue;
+
+                ReadingPost rep = groupPosts.stream()
+                        .filter(p -> p.getLevel() == CefrLevel.B1 || p.getLevel() == CefrLevel.B2)
+                        .findFirst()
+                        .orElse(groupPosts.get(0));
+
+                int minOrder = groupPosts.stream()
+                        .map(ReadingPost::getChapterOrder)
+                        .filter(Objects::nonNull)
+                        .min(Integer::compareTo)
+                        .orElse(999);
+
+                list.add(LearningJourneyResponse.ChapterSummaryDto.builder()
+                        .id(rep.getId())
+                        .chapterOrder(minOrder != 999 ? minOrder : (list.size() + 1))
+                        .titleEn(rep.getTitleEn())
+                        .titleVi(rep.getTitleVi())
+                        .summary(rep.getSummary())
+                        .readTime(rep.getReadTime())
+                        .level(rep.getLevel() != null ? rep.getLevel().name() : "B1")
+                        .imageUrl(rep.getImageUrl())
+                        .build());
+            }
+
+            list.sort(Comparator.comparing(c -> c.getChapterOrder() != null ? c.getChapterOrder() : 999));
+            chapterDtos = list;
         }
 
         return LearningJourneyResponse.builder()
@@ -256,6 +316,7 @@ public class LearningJourneyService {
                 .provinceId(journey.getProvinceId())
                 .region(journey.getRegion())
                 .description(journey.getDescription())
+                .descriptionVi(journey.getDescriptionVi())
                 .imageUrl(journey.getImageUrl())
                 .status(journey.getStatus())
                 .scheduledPublishAt(journey.getScheduledPublishAt())
@@ -280,6 +341,6 @@ public class LearningJourneyService {
         String noDiacritics = pattern.matcher(nfdNormalizedString).replaceAll("");
         return noDiacritics.toLowerCase()
                 .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-+|-+$", "");
+        .replaceAll("^-+|-+$", "");
     }
 }

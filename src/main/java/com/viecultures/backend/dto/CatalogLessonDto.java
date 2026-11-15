@@ -12,6 +12,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class CatalogLessonDto {
     private String id;
+    private String journeyId;
+    private Boolean isStandalone;
     private Map<String, String> postIds; // Keyed by "Level 1", "Level 2", "Level 3"
     private String topicGroup;
     private String titleEn;
@@ -21,6 +23,7 @@ public class CatalogLessonDto {
     private String region;
     private String imageUrl;
     private String summary;
+    private String summaryVi;
     private Boolean featured;
     private Integer totalReads;
     private Integer likesCount;
@@ -42,5 +45,6 @@ public class CatalogLessonDto {
         private Integer vocabCount;
         private Integer wordCount;
         private String summary;
+        private String summaryVi;
     }
 }

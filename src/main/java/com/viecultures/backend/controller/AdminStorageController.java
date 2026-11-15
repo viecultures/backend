@@ -1,6 +1,7 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.annotation.AuditLog;
 import com.viecultures.backend.dto.FileUploadResponse;
 import com.viecultures.backend.service.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,6 +49,7 @@ public class AdminStorageController {
                     description = "Yêu cầu quyền Quản trị viên (ROLE_ADMIN)"
             )
     })
+    @AuditLog(action = "UPLOAD_FILE", entity = "STORAGE", description = "Tải tệp hình ảnh lên Cloudflare R2")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<FileUploadResponse> uploadFile(
             @Parameter(description = "Tệp hình ảnh cần tải lên (tối đa 5MB)")

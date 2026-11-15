@@ -14,6 +14,10 @@ public interface DynamicApiKeyService {
 
     String getActiveGeminiTranslateModel();
 
+    String getActiveGeminiTtsModel();
+
+    String getActiveGeminiSttModel();
+
     String getActiveAzureRegion();
 
     String getActiveTtsProvider();

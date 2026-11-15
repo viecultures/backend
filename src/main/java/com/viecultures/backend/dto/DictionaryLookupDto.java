@@ -1,6 +1,8 @@
 package com.viecultures.backend.dto;
 
 import com.viecultures.backend.entity.DictionaryEntry;
+import com.viecultures.backend.entity.ReadingPost;
+import com.viecultures.backend.entity.VocabItem;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,6 +25,13 @@ public class DictionaryLookupDto {
     private Integer searchCount;
     private boolean fromCache;
 
+    private String postId;
+    private String postTitleEn;
+    private String postTitleVi;
+    private String journeyId;
+    private String journeyTitleEn;
+    private String usageNote;
+
     public static DictionaryLookupDto fromEntity(DictionaryEntry entry) {
         return fromEntity(entry, true, "");
     }
@@ -42,6 +51,29 @@ public class DictionaryLookupDto {
                 .level(entry.getLevel())
                 .searchCount(entry.getSearchCount())
                 .fromCache(fromCache)
+                .build();
+    }
+
+    public static DictionaryLookupDto fromVocabItem(VocabItem item) {
+        ReadingPost post = item.getReadingPost();
+        return DictionaryLookupDto.builder()
+                .id(item.getId())
+                .word(item.getWord())
+                .pos(item.getPos())
+                .ipa(item.getIpa())
+                .viMeaning(item.getViMeaning())
+                .enDefinition("")
+                .contextSentence(item.getContextSentence())
+                .audioUrl(item.getAudioUrl())
+                .level(item.getLevel() != null ? item.getLevel().name() : null)
+                .usageNote(item.getUsageNote())
+                .postId(post != null ? post.getId() : null)
+                .postTitleEn(post != null ? post.getTitleEn() : null)
+                .postTitleVi(post != null ? post.getTitleVi() : null)
+                .journeyId(post != null && post.getJourney() != null ? post.getJourney().getId() : null)
+                .journeyTitleEn(post != null && post.getJourney() != null ? post.getJourney().getTitleEn() : null)
+                .searchCount(1)
+                .fromCache(true)
                 .build();
     }
 }

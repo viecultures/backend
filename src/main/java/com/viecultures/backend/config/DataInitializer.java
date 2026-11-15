@@ -4,12 +4,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.entity.AiServiceConfig;
+import com.viecultures.backend.entity.CefrLevel;
+import com.viecultures.backend.entity.DictionaryEntry;
 import com.viecultures.backend.entity.LearningJourney;
+import com.viecultures.backend.entity.ReadingPost;
 import com.viecultures.backend.entity.SubscriptionPlan;
 import com.viecultures.backend.entity.SubscriptionTransaction;
 import com.viecultures.backend.entity.SystemAiSetting;
 import com.viecultures.backend.entity.User;
+import com.viecultures.backend.entity.VocabItem;
 import com.viecultures.backend.repository.AiServiceConfigRepository;
+import com.viecultures.backend.repository.DictionaryEntryRepository;
 import com.viecultures.backend.repository.LearningJourneyRepository;
 import com.viecultures.backend.repository.ReadingPostRepository;
 import com.viecultures.backend.repository.SubscriptionPlanRepository;
@@ -48,6 +53,7 @@ public class DataInitializer implements CommandLineRunner {
     private final CryptoService cryptoService;
     private final PasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+    private final DictionaryEntryRepository dictionaryEntryRepository;
 
     @Value("${gemini.chat.api.key:${gemini.api.key:}}")
     private String geminiChatKey;
@@ -137,21 +143,75 @@ public class DataInitializer implements CommandLineRunner {
             try (InputStream is = resource.getInputStream()) {
                 List<ReadingPostRequest> posts = objectMapper.readValue(is, new TypeReference<List<ReadingPostRequest>>() {});
                 int seededCount = 0;
+                int updatedVocabCount = 0;
                 for (ReadingPostRequest postReq : posts) {
                     if (postReq.getId() != null && readingPostRepository.existsById(postReq.getId())) {
+                        ReadingPost existingPost = readingPostRepository.findById(postReq.getId()).orElse(null);
+                        if (existingPost != null) {
+                            boolean hasNoVocab = existingPost.getVocabularies() == null || existingPost.getVocabularies().isEmpty();
+                            if (hasNoVocab && postReq.getVocabularies() != null && !postReq.getVocabularies().isEmpty()) {
+                                for (ReadingPostRequest.VocabItemDto vDto : postReq.getVocabularies()) {
+                                    VocabItem vocab = VocabItem.builder()
+                                            .readingPost(existingPost)
+                                            .word(vDto.getWord())
+                                            .ipa(vDto.getIpa())
+                                            .pos(vDto.getPos())
+                                            .viMeaning(vDto.getViMeaning())
+                                            .contextSentence(vDto.getContextSentence())
+                                            .audioUrl(vDto.getAudioUrl())
+                                            .level(vDto.getLevel())
+                                            .usageNote(vDto.getUsageNote())
+                                            .build();
+                                    existingPost.getVocabularies().add(vocab);
+                                }
+                                readingPostRepository.save(existingPost);
+                                updatedVocabCount++;
+                            }
+
+                            syncVocabulariesToDictionary(postReq.getVocabularies(), existingPost.getLevel());
+                        }
                         continue;
                     }
+
                     try {
                         readingPostService.createPost(postReq);
+                        syncVocabulariesToDictionary(postReq.getVocabularies(), postReq.getLevel());
                         seededCount++;
                     } catch (Exception e) {
                         log.error("[DataInitializer] Loi khi seed bai doc {}: {}", postReq.getId(), e.getMessage(), e);
                     }
                 }
-                log.info("[DataInitializer] Da hoan tat seed bai doc. So luong moi them: {} / tong: {}", seededCount, posts.size());
+                log.info("[DataInitializer] Da hoan tat seed bai doc. So luong moi them: {} / tong: {}, da bo sung tu vung cho: {} bai viet da ton tai",
+                        seededCount, posts.size(), updatedVocabCount);
             }
         } catch (Exception e) {
             log.error("[DataInitializer] Loi khi nap du lieu seed-data/reading-posts.json: {}", e.getMessage(), e);
+        }
+    }
+
+    private void syncVocabulariesToDictionary(List<ReadingPostRequest.VocabItemDto> vocabularies, CefrLevel postLevel) {
+        if (vocabularies == null || vocabularies.isEmpty()) {
+            return;
+        }
+        for (ReadingPostRequest.VocabItemDto vDto : vocabularies) {
+            if (vDto.getWord() == null || vDto.getWord().isBlank()) {
+                continue;
+            }
+            String normalizedWord = vDto.getWord().trim().toLowerCase();
+            if (dictionaryEntryRepository.findByWordIgnoreCase(normalizedWord).isEmpty()) {
+                String levelStr = vDto.getLevel() != null ? vDto.getLevel().name() : (postLevel != null ? postLevel.name() : "B1");
+                DictionaryEntry entry = DictionaryEntry.builder()
+                        .word(normalizedWord)
+                        .pos(vDto.getPos() != null ? vDto.getPos().trim() : null)
+                        .ipa(vDto.getIpa() != null ? vDto.getIpa().trim() : null)
+                        .viMeaning(vDto.getViMeaning() != null ? vDto.getViMeaning().trim() : null)
+                        .contextSentence(vDto.getContextSentence() != null ? vDto.getContextSentence().trim() : null)
+                        .audioUrl(vDto.getAudioUrl() != null ? vDto.getAudioUrl().trim() : null)
+                        .level(levelStr)
+                        .searchCount(1)
+                        .build();
+                dictionaryEntryRepository.save(entry);
+            }
         }
     }
 
