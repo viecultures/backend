@@ -5,13 +5,21 @@ import com.viecultures.backend.dto.FileUploadResponse;
 import com.viecultures.backend.service.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -35,6 +43,9 @@ public class R2StorageServiceImpl implements StorageService {
     private final S3Client s3Client;
     private final R2StorageConfig r2Config;
 
+    @Value("${storage.local.dir:uploads}")
+    private String localStorageDir;
+
     public R2StorageServiceImpl(@Autowired(required = false) S3Client s3Client, R2StorageConfig r2Config) {
         this.s3Client = s3Client;
         this.r2Config = r2Config;
@@ -52,19 +63,20 @@ public class R2StorageServiceImpl implements StorageService {
 
         String cleanFolder = sanitizeFolder(folder);
         String key = generateStorageKey(cleanFolder, ext);
-        String publicUrl = buildPublicUrl(key);
 
         if (s3Client == null || !r2Config.isConfigured()) {
-            log.warn("Cloudflare R2 chua duoc cau hinh day du credentials. Dang su dung che do fallback mo phong URL cho tep: '{}'. URL: {}",
-                    originalFilename, publicUrl);
+            String localUrl = saveToLocalStorage(file, key);
+            log.info("Cloudflare R2 chua duoc cau hinh. Da luu tep cuc bo cho '{}'. URL: {}", originalFilename, localUrl);
             return FileUploadResponse.builder()
-                    .url(publicUrl)
+                    .url(localUrl)
                     .key(key)
                     .fileName(originalFilename)
                     .size(file.getSize())
                     .contentType(contentType)
                     .build();
         }
+
+        String publicUrl = buildPublicUrl(key);
 
         try {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -149,10 +161,37 @@ public class R2StorageServiceImpl implements StorageService {
         };
     }
 
+    private String saveToLocalStorage(MultipartFile file, String key) {
+        try {
+            Path baseDir = Paths.get(localStorageDir);
+            if (!baseDir.isAbsolute()) {
+                baseDir = Paths.get("").toAbsolutePath().resolve(baseDir).normalize();
+            }
+            Path targetPath = baseDir.resolve(key).normalize();
+            if (!targetPath.startsWith(baseDir)) {
+                throw new IllegalArgumentException("Duong dan luu tru khong hop le.");
+            }
+            Files.createDirectories(targetPath.getParent());
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
+            if (RequestContextHolder.getRequestAttributes() != null) {
+                return ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/uploads/")
+                        .path(key)
+                        .toUriString();
+            }
+            return "/uploads/" + key;
+        } catch (IOException e) {
+            log.error("Loi khi luu tep cuc bo '{}': {}", key, e.getMessage(), e);
+            throw new RuntimeException("Khong the luu tep cuc bo: " + e.getMessage(), e);
+        }
+    }
+
     private String buildPublicUrl(String key) {
         String publicDomain = r2Config.getPublicDomain();
         if (publicDomain == null || publicDomain.trim().isEmpty()) {
-            publicDomain = "https://cdn.viecultures.com";
+            throw new IllegalStateException("Chua cau hinh cloudflare.r2.public-domain (R2_PUBLIC_DOMAIN) de tao URL cong khai.");
         }
         publicDomain = publicDomain.trim();
         if (publicDomain.endsWith("/")) {

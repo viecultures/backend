@@ -19,6 +19,9 @@ public class CorsConfig implements WebMvcConfigurer {
     @Value("${audio.output.dir}")
     private String audioOutputDir;
 
+    @Value("${storage.local.dir:uploads}")
+    private String storageLocalDir;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         java.util.List<String> patterns = new java.util.ArrayList<>(java.util.Arrays.asList(
@@ -57,5 +60,16 @@ public class CorsConfig implements WebMvcConfigurer {
         }
         registry.addResourceHandler("/audio/**")
                 .addResourceLocations(location);
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations(toDirectoryResourceLocation(storageLocalDir));
+    }
+
+    private String toDirectoryResourceLocation(String dir) {
+        Path path = Paths.get(dir);
+        if (!path.isAbsolute()) {
+            path = Paths.get("").toAbsolutePath().resolve(path).normalize();
+        }
+        String loc = path.toUri().toString();
+        return loc.endsWith("/") ? loc : loc + "/";
     }
 }

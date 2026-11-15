@@ -29,7 +29,7 @@ public class R2StorageConfig {
     @Value("${cloudflare.r2.bucket-name:viecultures-assets}")
     private String bucketName;
 
-    @Value("${cloudflare.r2.public-domain:https://cdn.viecultures.com}")
+    @Value("${cloudflare.r2.public-domain:}")
     private String publicDomain;
 
     public boolean isConfigured() {

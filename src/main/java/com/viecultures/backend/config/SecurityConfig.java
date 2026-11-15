@@ -57,10 +57,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/vocabularies/progress").permitAll()
                         .requestMatchers("/api/user_vocab_progress/**").permitAll()
 
-                        // Audio & TTS Service
+                        // Audio & TTS Service & Local Uploaded Assets
                         .requestMatchers("/api/tts/**").permitAll()
                         .requestMatchers("/api/voice/**", "/api/v1/voice/**").permitAll()
                         .requestMatchers("/audio/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
 
                         // AI Companion Chat Service (Public with internal rate-limiting)
                         .requestMatchers("/api/v1/companion/**").permitAll()
