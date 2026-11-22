@@ -1,4 +1,4 @@
-package com.viecultures.backend.config;
+package com.viecultures.backend.common.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;

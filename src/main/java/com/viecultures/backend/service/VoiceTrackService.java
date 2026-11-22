@@ -1,6 +1,6 @@
 package com.viecultures.backend.service;
 
-import com.viecultures.backend.config.R2StorageConfig;
+import com.viecultures.backend.common.config.R2StorageConfig;
 import com.viecultures.backend.dto.GenerateVoiceTrackRequest;
 import com.viecultures.backend.dto.TtsRequest;
 import com.viecultures.backend.dto.TtsResult;

@@ -1,4 +1,4 @@
-package com.viecultures.backend.config;
+package com.viecultures.backend.common.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

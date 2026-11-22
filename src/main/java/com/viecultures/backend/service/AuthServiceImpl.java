@@ -10,7 +10,7 @@ import com.viecultures.backend.entity.OtpPurpose;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.User;
 import com.viecultures.backend.repository.UserRepository;
-import com.viecultures.backend.service.JwtService;
+import com.viecultures.backend.common.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;

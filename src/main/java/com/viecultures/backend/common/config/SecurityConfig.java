@@ -1,7 +1,7 @@
-package com.viecultures.backend.config;
+package com.viecultures.backend.common.config;
 
-import com.viecultures.backend.security.RestAuthenticationEntryPoint;
-import com.viecultures.backend.security.jwt.JwtAuthFilter;
+import com.viecultures.backend.common.security.RestAuthenticationEntryPoint;
+import com.viecultures.backend.common.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

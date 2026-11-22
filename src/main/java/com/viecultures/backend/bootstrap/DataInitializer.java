@@ -1,4 +1,4 @@
-package com.viecultures.backend.config;
+package com.viecultures.backend.bootstrap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

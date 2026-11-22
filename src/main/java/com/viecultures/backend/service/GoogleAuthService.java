@@ -4,6 +4,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
+import com.viecultures.backend.common.security.JwtService;
 import com.viecultures.backend.dto.AuthResponse;
 import com.viecultures.backend.dto.AuthUserDto;
 import com.viecultures.backend.dto.GoogleLoginRequest;

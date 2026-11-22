@@ -54,12 +54,24 @@ backend/
     │   ├── java/com/viecultures/backend/
     │   │   ├── VieculturesBackendApplication.java  # Spring Boot Main Entry Point
     │   │   │
-    │   │   ├── config/                        # Cross-cutting & Infrastructure Configurations
-    │   │   │   ├── AppConfig.java             # General beans (RestTemplate, etc.)
-    │   │   │   ├── CorsConfig.java            # WebMvcConfigurer: CORS & /audio/** static resource mapping
-    │   │   │   ├── DataInitializer.java       # CommandLineRunner: Seeds sample posts on empty DB
-    │   │   │   ├── OpenApiConfig.java         # OpenAPI 3.0 / Swagger metadata + JWT Bearer scheme config
-    │   │   │   └── SecurityConfig.java        # Spring Security: Stateless JWT filter chain, public/auth routes
+    │   │   ├── common/                        # Common Infrastructure, Shared Config & Security
+    │   │   │   ├── config/                    # Cross-cutting & Infrastructure Configurations
+    │   │   │   │   ├── AppConfig.java         # General beans (RestTemplate, etc.)
+    │   │   │   │   ├── AsyncConfig.java       # @EnableAsync & ThreadPoolTaskExecutor
+    │   │   │   │   ├── CacheConfig.java       # In-memory Caffeine Caching (@EnableCaching)
+    │   │   │   │   ├── CorsConfig.java        # WebMvcConfigurer: CORS & /audio/** static resource mapping
+    │   │   │   │   ├── OpenApiConfig.java     # OpenAPI 3.0 / Swagger metadata + JWT Bearer scheme config
+    │   │   │   │   ├── R2StorageConfig.java   # Cloudflare R2 / AWS S3 client configuration
+    │   │   │   │   └── SecurityConfig.java    # Spring Security: Stateless JWT filter chain, public/auth routes
+    │   │   │   │
+    │   │   │   └── security/                  # Spring Security & JWT Implementation
+    │   │   │       ├── CustomUserDetailsService.java # UserDetailsService loading from UserRepository
+    │   │   │       ├── RestAuthenticationEntryPoint.java # 401 Unauthorized JSON Handler
+    │   │   │       ├── JwtAuthFilter.java     # OncePerRequestFilter checking Bearer header
+    │   │   │       └── JwtService.java        # JJWT HMAC-SHA256 signing, claims & validation
+    │   │   │
+    │   │   ├── bootstrap/                     # Application Startup & Data Seeding
+    │   │   │   └── DataInitializer.java       # CommandLineRunner: Seeds sample posts on empty DB
     │   │   │
     │   │   ├── controller/                    # REST API Endpoints (@RestController)
     │   │   │   ├── AuthController.java        # /api/v1/auth (Login, Register, Google OAuth, Me)
@@ -108,13 +120,6 @@ backend/
     │   │   │   ├── UserRepository.java        # findByEmail, findByGoogleId, existsByEmail
     │   │   │   ├── UserVocabProgressRepository.java
     │   │   │   └── VocabItemRepository.java
-    │   │   │
-    │   │   ├── security/                      # Spring Security & JWT Implementation
-    │   │   │   ├── CustomUserDetailsService.java # UserDetailsService loading from UserRepository
-    │   │   │   ├── RestAuthenticationEntryPoint.java # 401 Unauthorized JSON Handler
-    │   │   │   └── jwt/
-    │   │   │       ├── JwtAuthFilter.java     # OncePerRequestFilter checking Bearer header
-    │   │   │       └── JwtService.java        # JJWT HMAC-SHA256 signing, claims & validation
     │   │   │
     │   │   └── service/                       # Business Logic & External API Integrations
     │   │       ├── AuthService.java           # Authentication service interface

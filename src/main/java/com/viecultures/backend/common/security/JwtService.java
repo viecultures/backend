@@ -1,4 +1,4 @@
-package com.viecultures.backend.service;
+package com.viecultures.backend.common.security;
 
 import com.viecultures.backend.entity.User;
 import io.jsonwebtoken.Claims;

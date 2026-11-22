@@ -1,5 +1,6 @@
 package com.viecultures.backend.service;
 
+import com.viecultures.backend.common.security.JwtService;
 import com.viecultures.backend.dto.AuthRequest;
 import com.viecultures.backend.dto.AuthResponse;
 import com.viecultures.backend.dto.RegisterRequest;

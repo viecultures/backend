@@ -1,4 +1,4 @@
-package com.viecultures.backend.security;
+package com.viecultures.backend.common.security;
 
 import com.viecultures.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

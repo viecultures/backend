@@ -1,6 +1,6 @@
 package com.viecultures.backend.service;
 
-import com.viecultures.backend.config.CacheConfig;
+import com.viecultures.backend.common.config.CacheConfig;
 import com.viecultures.backend.dto.EntityOptionDto;
 import com.viecultures.backend.dto.JourneyChapterView;
 import com.viecultures.backend.dto.LearningJourneyRequest;

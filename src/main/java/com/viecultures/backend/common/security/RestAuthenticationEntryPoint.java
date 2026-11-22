@@ -1,4 +1,4 @@
-package com.viecultures.backend.security;
+package com.viecultures.backend.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viecultures.backend.dto.ApiResponse;

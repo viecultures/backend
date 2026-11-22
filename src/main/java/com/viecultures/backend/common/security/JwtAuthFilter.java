@@ -1,7 +1,4 @@
-package com.viecultures.backend.security.jwt;
-
-import com.viecultures.backend.security.CustomUserDetailsService;
-import com.viecultures.backend.service.JwtService;
+package com.viecultures.backend.common.security;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

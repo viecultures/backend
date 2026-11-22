@@ -1,4 +1,4 @@
-package com.viecultures.backend.config;
+package com.viecultures.backend.common.config;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
