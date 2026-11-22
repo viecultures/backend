@@ -1,6 +1,6 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.OtpActionResponse;
+import com.viecultures.backend.modules.auth.dto.OtpActionResponse;
 import com.viecultures.backend.dto.SendEmailNotificationRequest;
 import com.viecultures.backend.integration.mail.EmailService;
 import io.swagger.v3.oas.annotations.Operation;

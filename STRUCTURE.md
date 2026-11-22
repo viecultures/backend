@@ -95,6 +95,17 @@ backend/
     │   │   │   ├── mail/                      # SMTP & Mail Dispatcher (EmailService)
     │   │   │   └── storage/                   # Cloudflare R2 Object Storage (StorageService, R2StorageServiceImpl)
     │   │   │
+    │   │   ├── modules/                       # Feature-First Modular Slices (Domain Modules)
+    │   │   │   ├── speech/                    # TTS, STT & Voice Track Audio Processing
+    │   │   │   │   ├── controller/            # TtsController, VoiceController, TwoPassSttController
+    │   │   │   │   ├── service/               # TtsManagerService, VoiceTrackService, TwoPassSttService, TtsCacheService
+    │   │   │   │   └── dto/                   # TtsRequest, TtsResult, VoiceTrackResponse, etc.
+    │   │   │   │
+    │   │   │   └── auth/                      # Authentication & Account Security
+    │   │   │       ├── controller/            # AuthController
+    │   │   │       ├── service/               # AuthService, OtpService, AuthServiceImpl
+    │   │   │       └── dto/                   # AuthRequest, AuthResponse, RegisterRequest, etc.
+    │   │   │
     │   │   ├── controller/                    # REST API Endpoints (@RestController)
     │   │   │   ├── AuthController.java        # /api/v1/auth (Login, Register, Google OAuth, Me)
     │   │   │   ├── HealthController.java      # GET /api/health
