@@ -1,4 +1,4 @@
-package com.viecultures.backend.service;
+package com.viecultures.backend.integration.mail;
 
 import com.viecultures.backend.entity.OtpPurpose;
 import jakarta.mail.internet.MimeMessage;

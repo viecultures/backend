@@ -9,7 +9,7 @@ import com.viecultures.backend.repository.AiUsageLogRepository;
 import com.viecultures.backend.repository.SystemAiSettingRepository;
 import com.viecultures.backend.service.AdminAiConfigService;
 import com.viecultures.backend.service.CryptoService;
-import com.viecultures.backend.service.DynamicApiKeyService;
+import com.viecultures.backend.integration.gemini.DynamicApiKeyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,4 +1,4 @@
-package com.viecultures.backend.service;
+package com.viecultures.backend.integration.gemini;
 
 import com.viecultures.backend.entity.AiServiceConfig;
 

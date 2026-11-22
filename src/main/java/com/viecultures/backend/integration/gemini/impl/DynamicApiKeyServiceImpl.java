@@ -1,11 +1,11 @@
-package com.viecultures.backend.service.impl;
+package com.viecultures.backend.integration.gemini.impl;
 
 import com.viecultures.backend.entity.AiServiceConfig;
 import com.viecultures.backend.entity.SystemAiSetting;
 import com.viecultures.backend.repository.AiServiceConfigRepository;
 import com.viecultures.backend.repository.SystemAiSettingRepository;
 import com.viecultures.backend.service.CryptoService;
-import com.viecultures.backend.service.DynamicApiKeyService;
+import com.viecultures.backend.integration.gemini.DynamicApiKeyService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

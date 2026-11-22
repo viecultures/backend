@@ -4,7 +4,7 @@ import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.*;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.service.AuthService;
-import com.viecultures.backend.service.GoogleAuthService;
+import com.viecultures.backend.integration.google.GoogleAuthService;
 import com.viecultures.backend.service.OtpService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

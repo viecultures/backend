@@ -1,4 +1,4 @@
-package com.viecultures.backend.service;
+package com.viecultures.backend.integration.gemini;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

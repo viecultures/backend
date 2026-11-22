@@ -1,8 +1,11 @@
 package com.viecultures.backend.service;
 
+import com.viecultures.backend.common.exception.TtsException;
 import com.viecultures.backend.dto.TtsRequest;
 import com.viecultures.backend.dto.TtsResult;
-import com.viecultures.backend.common.exception.TtsException;
+import com.viecultures.backend.integration.azure.AzureSpeechService;
+import com.viecultures.backend.integration.gemini.DynamicApiKeyService;
+import com.viecultures.backend.integration.gemini.GeminiVoiceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

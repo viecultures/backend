@@ -88,6 +88,13 @@ backend/
     │   │   ├── bootstrap/                     # Application Startup & Data Seeding
     │   │   │   └── DataInitializer.java       # CommandLineRunner: Seeds sample posts on empty DB
     │   │   │
+    │   │   ├── integration/                   # Third-Party External Clients & Integrations
+    │   │   │   ├── azure/                     # Azure Speech REST SSML Client (AzureSpeechService)
+    │   │   │   ├── gemini/                    # Gemini AI Voice & Dynamic Key Manager (GeminiVoiceService, DynamicApiKeyService)
+    │   │   │   ├── google/                    # Google OAuth2 & API Integration (GoogleAuthService, GoogleIntegrationService)
+    │   │   │   ├── mail/                      # SMTP & Mail Dispatcher (EmailService)
+    │   │   │   └── storage/                   # Cloudflare R2 Object Storage (StorageService, R2StorageServiceImpl)
+    │   │   │
     │   │   ├── controller/                    # REST API Endpoints (@RestController)
     │   │   │   ├── AuthController.java        # /api/v1/auth (Login, Register, Google OAuth, Me)
     │   │   │   ├── HealthController.java      # GET /api/health

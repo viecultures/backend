@@ -1,10 +1,10 @@
-package com.viecultures.backend.service.impl;
+package com.viecultures.backend.integration.google.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viecultures.backend.dto.google.Ga4ReportResponse;
 import com.viecultures.backend.dto.google.GscReportResponse;
-import com.viecultures.backend.service.GoogleIntegrationService;
+import com.viecultures.backend.integration.google.GoogleIntegrationService;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

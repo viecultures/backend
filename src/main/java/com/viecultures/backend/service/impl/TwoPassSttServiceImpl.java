@@ -9,7 +9,7 @@ import com.viecultures.backend.dto.TwoPassSttResponse;
 import com.viecultures.backend.entity.AiServiceConfig;
 import com.viecultures.backend.service.AiCostTrackingService;
 import com.viecultures.backend.service.AdminAiPromptService;
-import com.viecultures.backend.service.DynamicApiKeyService;
+import com.viecultures.backend.integration.gemini.DynamicApiKeyService;
 import com.viecultures.backend.service.TwoPassSttService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

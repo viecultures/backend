@@ -39,7 +39,7 @@ import com.viecultures.backend.service.AdminAiPromptService;
 
 import com.viecultures.backend.service.CompanionChatService;
 
-import com.viecultures.backend.service.DynamicApiKeyService;
+import com.viecultures.backend.integration.gemini.DynamicApiKeyService;
 
 import lombok.RequiredArgsConstructor;
 

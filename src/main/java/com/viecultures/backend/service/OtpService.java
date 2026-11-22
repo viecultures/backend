@@ -7,6 +7,7 @@ import com.viecultures.backend.dto.VerifyOtpRequest;
 import com.viecultures.backend.entity.EmailOtpToken;
 import com.viecultures.backend.entity.OtpPurpose;
 import com.viecultures.backend.entity.User;
+import com.viecultures.backend.integration.mail.EmailService;
 import com.viecultures.backend.repository.EmailOtpTokenRepository;
 import com.viecultures.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

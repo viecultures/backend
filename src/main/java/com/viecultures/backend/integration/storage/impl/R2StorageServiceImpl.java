@@ -1,8 +1,8 @@
-package com.viecultures.backend.service.impl;
+package com.viecultures.backend.integration.storage.impl;
 
 import com.viecultures.backend.common.config.R2StorageConfig;
 import com.viecultures.backend.dto.FileUploadResponse;
-import com.viecultures.backend.service.StorageService;
+import com.viecultures.backend.integration.storage.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

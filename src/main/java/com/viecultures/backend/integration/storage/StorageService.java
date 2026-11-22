@@ -1,4 +1,4 @@
-package com.viecultures.backend.service;
+package com.viecultures.backend.integration.storage;
 
 import com.viecultures.backend.dto.FileUploadResponse;
 import org.springframework.web.multipart.MultipartFile;

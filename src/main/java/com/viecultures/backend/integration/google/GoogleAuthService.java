@@ -1,4 +1,4 @@
-package com.viecultures.backend.service;
+package com.viecultures.backend.integration.google;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;

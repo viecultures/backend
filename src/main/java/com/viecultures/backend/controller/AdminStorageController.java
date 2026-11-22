@@ -3,7 +3,7 @@ package com.viecultures.backend.controller;
 import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.common.annotation.AuditLog;
 import com.viecultures.backend.dto.FileUploadResponse;
-import com.viecultures.backend.service.StorageService;
+import com.viecultures.backend.integration.storage.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

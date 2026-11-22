@@ -7,7 +7,7 @@ import com.viecultures.backend.dto.VoiceGenerateRequest;
 import com.viecultures.backend.dto.VoiceGenerateResponse;
 import com.viecultures.backend.dto.VoiceModelDto;
 import com.viecultures.backend.dto.VoiceTrackResponse;
-import com.viecultures.backend.service.GeminiVoiceService;
+import com.viecultures.backend.integration.gemini.GeminiVoiceService;
 import com.viecultures.backend.service.VoiceTrackService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -2,7 +2,7 @@ package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.OtpActionResponse;
 import com.viecultures.backend.dto.SendEmailNotificationRequest;
-import com.viecultures.backend.service.EmailService;
+import com.viecultures.backend.integration.mail.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

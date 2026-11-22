@@ -4,7 +4,7 @@ import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.*;
 import com.viecultures.backend.entity.OtpPurpose;
 import com.viecultures.backend.service.AuthService;
-import com.viecultures.backend.service.GoogleAuthService;
+import com.viecultures.backend.integration.google.GoogleAuthService;
 import com.viecultures.backend.service.OtpService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

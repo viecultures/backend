@@ -1,6 +1,7 @@
-package com.viecultures.backend.service;
+package com.viecultures.backend.integration.azure;
 
 import com.viecultures.backend.common.exception.TtsException;
+import com.viecultures.backend.integration.gemini.DynamicApiKeyService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
