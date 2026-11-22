@@ -33,9 +33,9 @@ import com.viecultures.backend.repository.ParagraphPairRepository;
 
 import com.viecultures.backend.repository.ReadingPostRepository;
 
-import com.viecultures.backend.service.AiCostTrackingService;
+import com.viecultures.backend.modules.admin.service.AiCostTrackingService;
 
-import com.viecultures.backend.service.AdminAiPromptService;
+import com.viecultures.backend.modules.admin.service.AdminAiPromptService;
 
 import com.viecultures.backend.modules.chat.service.CompanionChatService;
 

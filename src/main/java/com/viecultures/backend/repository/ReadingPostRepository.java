@@ -1,8 +1,8 @@
 package com.viecultures.backend.repository;
 
-import com.viecultures.backend.dto.CatalogPostView;
-import com.viecultures.backend.dto.EntityOptionDto;
-import com.viecultures.backend.dto.JourneyChapterView;
+import com.viecultures.backend.modules.learning.dto.CatalogPostView;
+import com.viecultures.backend.modules.learning.dto.EntityOptionDto;
+import com.viecultures.backend.modules.learning.dto.JourneyChapterView;
 import com.viecultures.backend.entity.CefrLevel;
 import com.viecultures.backend.entity.ReadingPost;
 import org.springframework.data.domain.Page;
@@ -21,7 +21,7 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
     List<ReadingPost> findByTopicIgnoreCase(String topic);
     List<ReadingPost> findByLevel(CefrLevel level);
 
-    @Query("SELECT new com.viecultures.backend.dto.CatalogPostView(" +
+    @Query("SELECT new com.viecultures.backend.modules.learning.dto.CatalogPostView(" +
            "p.id, p.topicGroup, p.titleEn, p.titleVi, p.topic, p.region, p.imageUrl, " +
            "p.wordCount, p.summary, p.summaryVi, p.level, p.readTime, p.totalReads, p.likesCount, " +
            "p.featured, p.createdAt, j.id) " +
@@ -30,7 +30,7 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
            "AND (:standalone IS NULL OR (:standalone = true AND j.id IS NULL) OR (:standalone = false AND j.id IS NOT NULL))")
     List<CatalogPostView> findCatalogPostViews(@Param("standalone") Boolean standalone);
 
-    @Query(value = "SELECT new com.viecultures.backend.dto.CatalogPostView(" +
+    @Query(value = "SELECT new com.viecultures.backend.modules.learning.dto.CatalogPostView(" +
            "p.id, p.topicGroup, p.titleEn, p.titleVi, p.topic, p.region, p.imageUrl, " +
            "p.wordCount, p.summary, p.summaryVi, p.level, p.readTime, p.totalReads, p.likesCount, " +
            "p.featured, p.createdAt, j.id) " +
@@ -61,7 +61,7 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
     @Query("SELECT COALESCE(NULLIF(p.region, ''), 'Toàn quốc'), COUNT(p) FROM ReadingPost p GROUP BY COALESCE(NULLIF(p.region, ''), 'Toàn quốc')")
     List<Object[]> countGroupByRegion();
 
-    @Query("SELECT new com.viecultures.backend.dto.JourneyChapterView(" +
+    @Query("SELECT new com.viecultures.backend.modules.learning.dto.JourneyChapterView(" +
            "p.id, p.journey.id, p.chapterOrder, p.topicGroup, " +
            "p.titleEn, p.titleVi, p.summary, p.readTime, p.level, p.imageUrl) " +
            "FROM ReadingPost p " +
@@ -70,7 +70,7 @@ public interface ReadingPostRepository extends JpaRepository<ReadingPost, String
            "ORDER BY p.chapterOrder ASC")
     List<JourneyChapterView> findPublishedChapterViewsByJourneyIds(@Param("journeyIds") Collection<String> journeyIds);
 
-    @Query("SELECT new com.viecultures.backend.dto.EntityOptionDto(p.id, p.titleVi, p.titleEn) " +
+    @Query("SELECT new com.viecultures.backend.modules.learning.dto.EntityOptionDto(p.id, p.titleVi, p.titleEn) " +
            "FROM ReadingPost p " +
            "WHERE (p.status IS NULL OR LOWER(p.status) = 'published') " +
            "ORDER BY p.titleVi ASC")

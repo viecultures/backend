@@ -6,7 +6,7 @@ import com.viecultures.backend.modules.speech.dto.TtsResult;
 import com.viecultures.backend.integration.azure.AzureSpeechService;
 import com.viecultures.backend.integration.gemini.DynamicApiKeyService;
 import com.viecultures.backend.integration.gemini.GeminiVoiceService;
-import com.viecultures.backend.service.AiCostTrackingService;
+import com.viecultures.backend.modules.admin.service.AiCostTrackingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

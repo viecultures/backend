@@ -1,7 +1,6 @@
 package com.viecultures.backend.modules.auth.controller;
 
 import com.viecultures.backend.common.response.ApiResponse;
-import com.viecultures.backend.dto.*;
 import com.viecultures.backend.modules.auth.dto.*;
 import com.viecultures.backend.entity.OtpPurpose;
 import com.viecultures.backend.modules.auth.service.AuthService;

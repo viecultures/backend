@@ -111,10 +111,24 @@ backend/
     │   │   │   │   ├── service/               # CompanionChatService, CompanionChatServiceImpl
     │   │   │   │   └── dto/                   # CompanionChatRequest, CompanionChatResponse, etc.
     │   │   │   │
-    │   │   │   └── gamification/              # Streak, Lesson Sealing & Activity Tracking
-    │   │   │       ├── controller/            # StreakController, UserActivityLogPublicController
-    │   │   │       ├── service/               # StreakService, UserActivityLogService
-    │   │   │       └── dto/                   # StreakSyncRequest, UserStreakDto, ActivityLogEventDto, etc.
+    │   │   │   ├── gamification/              # Streak, Lesson Sealing & Activity Tracking
+    │   │   │   │   ├── controller/            # StreakController, UserActivityLogPublicController
+    │   │   │   │   ├── service/               # StreakService, UserActivityLogService
+    │   │   │   │   └── dto/                   # StreakSyncRequest, UserStreakDto, ActivityLogEventDto, etc.
+    │   │   │   │
+    │   │   │   ├── learning/                  # Reading Posts, Vocabulary & Reflections
+    │   │   │   │   ├── controller/            # ReadingPostController, VocabController, LearningJourneyController, UserReflectionController
+    │   │   │   │   ├── service/               # ReadingPostService, LearningJourneyService, DictionaryLookupService, UserReflectionService
+    │   │   │   │   └── dto/                   # ReadingPostRequest, CatalogResponse, UserReflectionDto, etc.
+    │   │   │   │
+    │   │   │   ├── subscription/              # Public Subscription & Membership Plans
+    │   │   │   │   ├── controller/            # SubscriptionPublicController
+    │   │   │   │   └── dto/                   # SubscriptionPlanDto, SubscriptionTransactionDto, etc.
+    │   │   │   │
+    │   │   │   └── admin/                     # System Administration & Back-Office Services
+    │   │   │       ├── controller/            # AdminOverviewController, AdminUserController, AdminAiConfigController, etc.
+    │   │   │       ├── service/               # AdminOverviewService, AdminUserService, AdminAiConfigService, etc.
+    │   │   │       └── dto/                   # AdminOverviewStatsDto, LearnerDetailDto, etc.
     │   │   │
     │   │   ├── controller/                    # REST API Endpoints (@RestController)
     │   │   │   ├── AuthController.java        # /api/v1/auth (Login, Register, Google OAuth, Me)

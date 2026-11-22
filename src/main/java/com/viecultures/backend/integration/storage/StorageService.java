@@ -1,6 +1,6 @@
 package com.viecultures.backend.integration.storage;
 
-import com.viecultures.backend.dto.FileUploadResponse;
+import com.viecultures.backend.modules.admin.dto.FileUploadResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface StorageService {

@@ -1,6 +1,6 @@
 package com.viecultures.backend.repository;
 
-import com.viecultures.backend.dto.EntityOptionDto;
+import com.viecultures.backend.modules.learning.dto.EntityOptionDto;
 import com.viecultures.backend.entity.LearningJourney;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,7 +18,7 @@ public interface LearningJourneyRepository extends JpaRepository<LearningJourney
     @EntityGraph(attributePaths = {"chapters"})
     Optional<LearningJourney> findById(String id);
 
-    @Query("SELECT new com.viecultures.backend.dto.EntityOptionDto(j.id, j.titleVi, j.titleEn) " +
+    @Query("SELECT new com.viecultures.backend.modules.learning.dto.EntityOptionDto(j.id, j.titleVi, j.titleEn) " +
            "FROM LearningJourney j ORDER BY j.titleVi ASC")
     List<EntityOptionDto> findAllJourneyOptions();
 
