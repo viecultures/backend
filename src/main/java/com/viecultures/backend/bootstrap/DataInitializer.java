@@ -30,6 +30,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -68,6 +69,7 @@ public class DataInitializer implements CommandLineRunner {
     private String azureSpeechRegion;
 
     @Override
+    @Transactional
     public void run(String... args) {
         initDefaultAdmin();
         seedLearningJourneys();
@@ -132,7 +134,8 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private void seedReadingPosts() {
+    @Transactional
+    public void seedReadingPosts() {
         try {
             ClassPathResource resource = new ClassPathResource("seed-data/reading-posts.json");
             if (!resource.exists()) {
