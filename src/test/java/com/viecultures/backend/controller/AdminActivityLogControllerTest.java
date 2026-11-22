@@ -1,8 +1,8 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.analytics.ActivityLogResponse;
-import com.viecultures.backend.dto.analytics.ActivityStatsSummaryDto;
-import com.viecultures.backend.service.UserActivityLogService;
+import com.viecultures.backend.modules.gamification.dto.ActivityLogResponse;
+import com.viecultures.backend.modules.gamification.dto.ActivityStatsSummaryDto;
+import com.viecultures.backend.modules.gamification.service.UserActivityLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

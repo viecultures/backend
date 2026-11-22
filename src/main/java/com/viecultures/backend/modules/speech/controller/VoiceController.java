@@ -2,7 +2,7 @@ package com.viecultures.backend.modules.speech.controller;
 
 import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.modules.speech.dto.GenerateVoiceTrackRequest;
-import com.viecultures.backend.dto.LiveSessionResponse;
+import com.viecultures.backend.modules.chat.dto.LiveSessionResponse;
 import com.viecultures.backend.modules.speech.dto.VoiceGenerateRequest;
 import com.viecultures.backend.modules.speech.dto.VoiceGenerateResponse;
 import com.viecultures.backend.modules.speech.dto.VoiceModelDto;

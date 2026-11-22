@@ -1,9 +1,9 @@
 package com.viecultures.backend.controller;
 
 import com.viecultures.backend.common.response.ApiResponse;
-import com.viecultures.backend.dto.analytics.ActivityLogResponse;
-import com.viecultures.backend.dto.analytics.ActivityStatsSummaryDto;
-import com.viecultures.backend.service.UserActivityLogService;
+import com.viecultures.backend.modules.gamification.dto.ActivityLogResponse;
+import com.viecultures.backend.modules.gamification.dto.ActivityStatsSummaryDto;
+import com.viecultures.backend.modules.gamification.service.UserActivityLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

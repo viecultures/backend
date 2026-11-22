@@ -3,7 +3,7 @@ package com.viecultures.backend.common.aspect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.viecultures.backend.common.annotation.AuditLog;
 import com.viecultures.backend.entity.User;
-import com.viecultures.backend.service.UserActivityLogService;
+import com.viecultures.backend.modules.gamification.service.UserActivityLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

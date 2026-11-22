@@ -101,10 +101,20 @@ backend/
     │   │   │   │   ├── service/               # TtsManagerService, VoiceTrackService, TwoPassSttService, TtsCacheService
     │   │   │   │   └── dto/                   # TtsRequest, TtsResult, VoiceTrackResponse, etc.
     │   │   │   │
-    │   │   │   └── auth/                      # Authentication & Account Security
-    │   │   │       ├── controller/            # AuthController
-    │   │   │       ├── service/               # AuthService, OtpService, AuthServiceImpl
-    │   │   │       └── dto/                   # AuthRequest, AuthResponse, RegisterRequest, etc.
+    │   │   │   ├── auth/                      # Authentication & Account Security
+    │   │   │   │   ├── controller/            # AuthController
+    │   │   │   │   ├── service/               # AuthService, OtpService, AuthServiceImpl
+    │   │   │   │   └── dto/                   # AuthRequest, AuthResponse, RegisterRequest, etc.
+    │   │   │   │
+    │   │   │   ├── chat/                      # AI Companion Chat & Live Session
+    │   │   │   │   ├── controller/            # CompanionChatController
+    │   │   │   │   ├── service/               # CompanionChatService, CompanionChatServiceImpl
+    │   │   │   │   └── dto/                   # CompanionChatRequest, CompanionChatResponse, etc.
+    │   │   │   │
+    │   │   │   └── gamification/              # Streak, Lesson Sealing & Activity Tracking
+    │   │   │       ├── controller/            # StreakController, UserActivityLogPublicController
+    │   │   │       ├── service/               # StreakService, UserActivityLogService
+    │   │   │       └── dto/                   # StreakSyncRequest, UserStreakDto, ActivityLogEventDto, etc.
     │   │   │
     │   │   ├── controller/                    # REST API Endpoints (@RestController)
     │   │   │   ├── AuthController.java        # /api/v1/auth (Login, Register, Google OAuth, Me)
