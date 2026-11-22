@@ -74,11 +74,4 @@ public class GoogleIntegrationAdminController {
                     .body(ApiResponse.error("Không thể lấy dữ liệu Google Search Console: " + e.getMessage(), "GSC_ERROR"));
         }
     }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
-        log.error("Unhandled exception in GoogleIntegrationAdminController: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Lỗi máy chủ nội bộ: " + ex.getMessage(), "INTERNAL_SERVER_ERROR"));
-    }
 }

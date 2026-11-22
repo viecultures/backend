@@ -48,11 +48,4 @@ public class AdminOverviewController {
                     .body(ApiResponse.error("Failed to retrieve admin overview statistics: " + e.getMessage(), "INTERNAL_SERVER_ERROR"));
         }
     }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
-        log.error("Unhandled exception in admin overview controller: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Internal server error: " + ex.getMessage(), "INTERNAL_SERVER_ERROR"));
-    }
 }

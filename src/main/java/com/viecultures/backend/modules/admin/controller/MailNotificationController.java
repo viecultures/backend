@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mail")
+@RequestMapping({"/api/v1/mail", "/api/mail"})
 @RequiredArgsConstructor
 @Tag(name = "Automated Email & Notifications", description = "Các API gửi email thông báo hệ thống, bản tin và kiểm tra kết nối Gmail SMTP")
 public class MailNotificationController {

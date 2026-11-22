@@ -12,6 +12,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.stream.Collectors;
 
@@ -70,17 +72,43 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage(), "NOT_FOUND"));
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
-    public ResponseEntity<ApiResponse<Void>> handleBadRequestException(RuntimeException ex, HttpServletRequest request) {
-        log.warn("Bad request at {}: {}", request.getRequestURI(), ex.getMessage());
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException ex, HttpServletRequest request) {
+        log.warn("Bad argument at {}: {}", request != null ? request.getRequestURI() : "", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage(), "BAD_REQUEST"));
+                .body(ApiResponse.error(ex.getMessage(), "INVALID_ARGUMENT"));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(IllegalStateException ex, HttpServletRequest request) {
+        log.warn("Illegal state at {}: {}", request != null ? request.getRequestURI() : "", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage(), "ACTION_NOT_ALLOWED"));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatusException(ResponseStatusException ex, HttpServletRequest request) {
+        log.warn("Response status exception [{}] at {}: {}", ex.getStatusCode(), request != null ? request.getRequestURI() : "", ex.getReason());
+        String code = ex.getStatusCode().toString();
+        String reason = ex.getReason() != null ? ex.getReason() : ex.getMessage();
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(ApiResponse.error(reason, code));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        log.warn("File upload exceeds max size at {}: {}", request != null ? request.getRequestURI() : "", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiResponse.error("Kích thước tệp vượt quá giới hạn tối đa cho phép (5MB)", "FILE_TOO_LARGE"));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception ex, HttpServletRequest request) {
-        log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        log.error("Unhandled exception at {}: {}", request != null ? request.getRequestURI() : "", ex.getMessage(), ex);
+        String message = ex.getMessage() != null && !ex.getMessage().isBlank()
+                ? ex.getMessage()
+                : "Đã xảy ra lỗi hệ thống nội bộ. Vui lòng thử lại sau.";
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Đã xảy ra lỗi hệ thống nội bộ. Vui lòng thử lại sau.", "INTERNAL_SERVER_ERROR"));
+                .body(ApiResponse.error(message, "INTERNAL_SERVER_ERROR"));
     }
 }

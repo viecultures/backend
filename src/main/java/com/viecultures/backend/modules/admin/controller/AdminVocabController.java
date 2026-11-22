@@ -109,25 +109,4 @@ public class AdminVocabController {
         adminVocabService.deleteVocabulary(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Xoa tu vung thanh cong"));
     }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
-        log.warn("[AdminVocabController] Yeu cau khong hop le: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage(), "INVALID_ARGUMENT"));
-    }
-
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalState(IllegalStateException ex) {
-        log.warn("[AdminVocabController] Thao tac khong duoc phep: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage(), "ACTION_NOT_ALLOWED"));
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
-        log.error("[AdminVocabController] Loi he thong khi xu ly tu vung: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Loi may chu noi bo: " + ex.getMessage(), "INTERNAL_SERVER_ERROR"));
-    }
 }

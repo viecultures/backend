@@ -1,8 +1,7 @@
 package com.viecultures.backend.modules.learning.controller;
 
+import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.modules.learning.dto.UserVocabProgressDto;
-import com.viecultures.backend.entity.UserVocabProgress;
-import com.viecultures.backend.entity.VocabProgressStatus;
 import com.viecultures.backend.repository.UserVocabProgressRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,7 +15,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/user_vocab_progress")
+@RequestMapping({"/api/v1/user_vocab_progress", "/api/user_vocab_progress", "/api/v1/user/vocab-progress", "/api/user/vocab-progress"})
 @RequiredArgsConstructor
 @Tag(name = "4.1 User Vocabulary Progress", description = "Đồng bộ tiến độ học và ôn tập thẻ flashcard của người dùng")
 public class UserVocabProgressController {
@@ -26,7 +25,7 @@ public class UserVocabProgressController {
     @Operation(summary = "Lưu hoặc cập nhật tiến độ ôn tập từ vựng",
                description = "Nhận tiến độ flashcard nhị phân (Remembered / Forgot) và cập nhật CSDL.")
     @PostMapping
-    public ResponseEntity<UserVocabProgressDto> saveProgress(@RequestBody UserVocabProgressDto dto) {
+    public ResponseEntity<ApiResponse<UserVocabProgressDto>> saveProgress(@RequestBody UserVocabProgressDto dto) {
         if (dto.getLastReviewedAt() == null) {
             dto.setLastReviewedAt(LocalDateTime.now());
         }
@@ -35,13 +34,13 @@ public class UserVocabProgressController {
         }
         log.info("[UserVocabProgress] Cập nhật tiến độ từ vựng: word={}, status={}, reviewCount={}, contextSentence={}",
                 dto.getWord(), dto.getStatus(), dto.getReviewCount(), dto.getContextSentence());
-        return ResponseEntity.ok(dto);
+        return ResponseEntity.ok(ApiResponse.ok(dto, "Lưu tiến độ từ vựng thành công"));
     }
 
     @Operation(summary = "Lấy danh sách tiến độ từ vựng của người dùng")
     @GetMapping
-    public ResponseEntity<List<UserVocabProgressDto>> getProgress(@RequestParam(required = false) String userId) {
+    public ResponseEntity<ApiResponse<List<UserVocabProgressDto>>> getProgress(@RequestParam(required = false) String userId) {
         log.info("[UserVocabProgress] Truy vấn tiến độ từ vựng cho userId={}", userId);
-        return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok(ApiResponse.ok(List.of()));
     }
 }

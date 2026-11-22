@@ -1,6 +1,7 @@
 package com.viecultures.backend.modules.admin.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.viecultures.backend.common.exception.GlobalExceptionHandler;
 import com.viecultures.backend.modules.admin.dto.AdminUserSummaryDto;
 import com.viecultures.backend.modules.admin.dto.UpdateUserRoleRequest;
 import com.viecultures.backend.modules.admin.dto.UpdateUserStatusRequest;
@@ -54,6 +55,7 @@ class AdminUserControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(adminUserController)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
         objectMapper = new ObjectMapper();
