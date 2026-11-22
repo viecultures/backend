@@ -1,4 +1,4 @@
-package com.viecultures.backend.exception;
+package com.viecultures.backend.common.exception;
 
 import lombok.Getter;
 

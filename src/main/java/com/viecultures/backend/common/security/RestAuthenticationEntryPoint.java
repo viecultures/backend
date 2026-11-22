@@ -1,7 +1,7 @@
 package com.viecultures.backend.common.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.common.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

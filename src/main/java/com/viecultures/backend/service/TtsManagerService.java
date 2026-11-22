@@ -2,7 +2,7 @@ package com.viecultures.backend.service;
 
 import com.viecultures.backend.dto.TtsRequest;
 import com.viecultures.backend.dto.TtsResult;
-import com.viecultures.backend.exception.TtsException;
+import com.viecultures.backend.common.exception.TtsException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

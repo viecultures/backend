@@ -1,6 +1,6 @@
 package com.viecultures.backend.service;
 
-import com.viecultures.backend.exception.TtsException;
+import com.viecultures.backend.common.exception.TtsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;

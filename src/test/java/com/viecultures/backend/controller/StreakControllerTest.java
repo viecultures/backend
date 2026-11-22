@@ -1,6 +1,6 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.streak.*;
 import com.viecultures.backend.service.StreakService;
 import org.junit.jupiter.api.DisplayName;

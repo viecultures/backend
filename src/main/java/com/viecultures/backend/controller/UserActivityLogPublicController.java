@@ -1,6 +1,6 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.analytics.ActivityLogBatchRequest;
 import com.viecultures.backend.entity.User;
 import com.viecultures.backend.repository.UserRepository;

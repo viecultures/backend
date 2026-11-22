@@ -3,7 +3,7 @@ package com.viecultures.backend.controller;
 import com.viecultures.backend.dto.TtsErrorResponse;
 import com.viecultures.backend.dto.TtsRequest;
 import com.viecultures.backend.dto.TtsResult;
-import com.viecultures.backend.exception.TtsException;
+import com.viecultures.backend.common.exception.TtsException;
 import com.viecultures.backend.service.TtsManagerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

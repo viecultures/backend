@@ -2,7 +2,7 @@ package com.viecultures.backend.controller;
 
 import com.viecultures.backend.dto.CatalogResponse;
 import com.viecultures.backend.dto.EntityOptionDto;
-import com.viecultures.backend.annotation.AuditLog;
+import com.viecultures.backend.common.annotation.AuditLog;
 import com.viecultures.backend.dto.ReadingPostRequest;
 import com.viecultures.backend.dto.ReadingPostResponse;
 import com.viecultures.backend.entity.CefrLevel;

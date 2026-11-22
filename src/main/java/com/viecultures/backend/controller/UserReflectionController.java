@@ -1,6 +1,6 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.reflection.CreateReflectionRequest;
 import com.viecultures.backend.dto.reflection.ReactionResponse;
 import com.viecultures.backend.dto.reflection.UserReflectionDto;

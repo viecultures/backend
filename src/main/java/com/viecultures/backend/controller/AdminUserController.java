@@ -1,7 +1,7 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.annotation.AuditLog;
-import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.common.annotation.AuditLog;
+import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.admin.AdminUserSummaryDto;
 import com.viecultures.backend.dto.admin.LearnerDetailDto;
 import com.viecultures.backend.dto.admin.UpdateUserRoleRequest;

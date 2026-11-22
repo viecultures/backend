@@ -1,4 +1,4 @@
-package com.viecultures.backend.dto;
+package com.viecultures.backend.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

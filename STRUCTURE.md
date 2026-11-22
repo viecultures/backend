@@ -64,11 +64,26 @@ backend/
     │   │   │   │   ├── R2StorageConfig.java   # Cloudflare R2 / AWS S3 client configuration
     │   │   │   │   └── SecurityConfig.java    # Spring Security: Stateless JWT filter chain, public/auth routes
     │   │   │   │
-    │   │   │   └── security/                  # Spring Security & JWT Implementation
-    │   │   │       ├── CustomUserDetailsService.java # UserDetailsService loading from UserRepository
-    │   │   │       ├── RestAuthenticationEntryPoint.java # 401 Unauthorized JSON Handler
-    │   │   │       ├── JwtAuthFilter.java     # OncePerRequestFilter checking Bearer header
-    │   │   │       └── JwtService.java        # JJWT HMAC-SHA256 signing, claims & validation
+    │   │   │   ├── security/                  # Spring Security & JWT Implementation
+    │   │   │   │   ├── CustomUserDetailsService.java # UserDetailsService loading from UserRepository
+    │   │   │   │   ├── RestAuthenticationEntryPoint.java # 401 Unauthorized JSON Handler
+    │   │   │   │   ├── JwtAuthFilter.java     # OncePerRequestFilter checking Bearer header
+    │   │   │   │   └── JwtService.java        # JJWT HMAC-SHA256 signing, claims & validation
+    │   │   │   │
+    │   │   │   ├── response/                  # Standard Response Wrappers
+    │   │   │   │   └── ApiResponse.java       # Unified JSON response envelope (success, data, message, errorCode)
+    │   │   │   │
+    │   │   │   ├── exception/                 # Centralized Exception Handling & Standard Error Codes
+    │   │   │   │   ├── ErrorCode.java         # Standard Error Codes interface/enum
+    │   │   │   │   ├── ApiException.java      # Base business RuntimeException
+    │   │   │   │   ├── TtsException.java      # Runtime exception for TTS/Azure/Gemini failures
+    │   │   │   │   └── GlobalExceptionHandler.java # @RestControllerAdvice centralized error interceptor
+    │   │   │   │
+    │   │   │   ├── annotation/                # Cross-cutting Custom Annotations
+    │   │   │   │   └── AuditLog.java          # Marker annotation for admin audit logging
+    │   │   │   │
+    │   │   │   └── aspect/                    # Aspect-Oriented Programming (AOP) Aspects
+    │   │   │       └── AdminAuditAspect.java  # Admin audit logging interceptor
     │   │   │
     │   │   ├── bootstrap/                     # Application Startup & Data Seeding
     │   │   │   └── DataInitializer.java       # CommandLineRunner: Seeds sample posts on empty DB
@@ -109,9 +124,6 @@ backend/
     │   │   │   ├── UserVocabProgress.java     # User vocabulary mastery progress (Composite ID)
     │   │   │   ├── VocabItem.java             # Vocabulary item (word, ipa, pos, vi_meaning, context)
     │   │   │   └── VocabProgressStatus.java   # Enum: NEW, LEARNING, MASTERED
-    │   │   │
-    │   │   ├── exception/                     # Domain & Custom Exceptions
-    │   │   │   └── TtsException.java          # Runtime exception for TTS/Azure/Gemini failures
     │   │   │
     │   │   ├── repository/                    # Spring Data JPA Interfaces
     │   │   │   ├── ParagraphPairRepository.java

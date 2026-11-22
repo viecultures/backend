@@ -1,6 +1,6 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.TwoPassSttResponse;
 import com.viecultures.backend.service.TwoPassSttService;
 import io.swagger.v3.oas.annotations.Operation;

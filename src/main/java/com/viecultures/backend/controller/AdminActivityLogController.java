@@ -1,6 +1,6 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.analytics.ActivityLogResponse;
 import com.viecultures.backend.dto.analytics.ActivityStatsSummaryDto;
 import com.viecultures.backend.service.UserActivityLogService;

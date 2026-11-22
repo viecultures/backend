@@ -1,7 +1,7 @@
-package com.viecultures.backend.aspect;
+package com.viecultures.backend.common.aspect;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.viecultures.backend.annotation.AuditLog;
+import com.viecultures.backend.common.annotation.AuditLog;
 import com.viecultures.backend.entity.User;
 import com.viecultures.backend.service.UserActivityLogService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,8 +28,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * AOP Aspect tu dong ghi nhan thao tac quan tri (Audit Log) khi phuong thuc duoc gan @AuditLog.
- * Thu thap thong tin Admin/Moderator, IP, User-Agent, tham so goi va ket qua thuc thi vao user_activity_logs.
+ * AOP Aspect tu dong ghi nhan thao tac quan tri (Audit Log) khi phuong thuc
+ * duoc gan @AuditLog.
+ * Thu thap thong tin Admin/Moderator, IP, User-Agent, tham so goi va ket qua
+ * thuc thi vao user_activity_logs.
  */
 @Slf4j
 @Aspect
@@ -59,7 +61,8 @@ public class AdminAuditAspect {
             try {
                 recordAuditLog(joinPoint, auditLog, result, status, errorMessage, executionTimeMs);
             } catch (Throwable auditEx) {
-                log.error("[AdminAuditAspect] Unexpected error occurred while capturing audit log: {}", auditEx.getMessage(), auditEx);
+                log.error("[AdminAuditAspect] Unexpected error occurred while capturing audit log: {}",
+                        auditEx.getMessage(), auditEx);
             }
         }
     }
@@ -70,8 +73,7 @@ public class AdminAuditAspect {
             Object result,
             String status,
             String errorMessage,
-            long executionTimeMs
-    ) {
+            long executionTimeMs) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = attributes != null ? attributes.getRequest() : null;
 
@@ -84,7 +86,8 @@ public class AdminAuditAspect {
         String userEmail = null;
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal())) {
             Object principal = authentication.getPrincipal();
             if (principal instanceof User user) {
                 userId = user.getId();
@@ -188,8 +191,7 @@ public class AdminAuditAspect {
                 path,
                 payloadJson,
                 ipAddress,
-                userAgent
-        );
+                userAgent);
     }
 
     private Object sanitizeArgument(Object arg) {

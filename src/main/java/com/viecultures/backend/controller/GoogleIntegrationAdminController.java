@@ -1,6 +1,6 @@
 package com.viecultures.backend.controller;
 
-import com.viecultures.backend.dto.ApiResponse;
+import com.viecultures.backend.common.response.ApiResponse;
 import com.viecultures.backend.dto.google.Ga4ReportResponse;
 import com.viecultures.backend.dto.google.GscReportResponse;
 import com.viecultures.backend.service.GoogleIntegrationService;
