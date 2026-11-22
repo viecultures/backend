@@ -33,6 +33,12 @@ class TtsServiceTest {
     @Mock
     private TtsCacheService ttsCacheService;
 
+    @Mock
+    private DynamicApiKeyService dynamicApiKeyService;
+
+    @Mock
+    private AiCostTrackingService aiCostTrackingService;
+
     @InjectMocks
     private TtsManagerService ttsManagerService;
 
@@ -40,6 +46,8 @@ class TtsServiceTest {
     void setUp() {
         ReflectionTestUtils.setField(ttsManagerService, "configuredProvider", "azure");
         ReflectionTestUtils.setField(ttsManagerService, "fallbackEnabled", true);
+        lenient().when(dynamicApiKeyService.getActiveTtsProvider()).thenReturn("azure");
+        lenient().when(dynamicApiKeyService.getActiveConfigId(anyString(), anyString())).thenReturn(1L);
     }
 
     @Test

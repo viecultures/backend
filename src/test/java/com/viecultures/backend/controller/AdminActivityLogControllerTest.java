@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -63,7 +64,7 @@ class AdminActivityLogControllerTest {
     @Test
     @DisplayName("getLogs_withFullFilterParams_returns200AndPagedList: Kiem tra GET /api/v1/admin/activity-logs voi cac query params")
     void getLogs_withFullFilterParams_returns200AndPagedList() throws Exception {
-        Page<ActivityLogResponse> mockPage = new PageImpl<>(List.of(sampleLogResponse));
+        Page<ActivityLogResponse> mockPage = new PageImpl<>(List.of(sampleLogResponse), PageRequest.of(0, 15), 1);
 
         when(userActivityLogService.getLogs(
                 eq("ARTICLE_READ"),
@@ -112,7 +113,7 @@ class AdminActivityLogControllerTest {
     @Test
     @DisplayName("getLogs_defaultParams_callsServiceWithDefaultPageable: Kiem tra goi voi tham so mac dinh")
     void getLogs_defaultParams_callsServiceWithDefaultPageable() throws Exception {
-        Page<ActivityLogResponse> emptyPage = new PageImpl<>(List.of());
+        Page<ActivityLogResponse> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
 
         when(userActivityLogService.getLogs(
                 isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), any(Pageable.class)
@@ -215,7 +216,7 @@ class AdminActivityLogControllerTest {
     @Test
     @DisplayName("getLogs_legacyPath_returns200: Kiem tra legacy route /api/admin/activity-logs van hoat dong dong nhat")
     void getLogs_legacyPath_returns200() throws Exception {
-        Page<ActivityLogResponse> mockPage = new PageImpl<>(List.of(sampleLogResponse));
+        Page<ActivityLogResponse> mockPage = new PageImpl<>(List.of(sampleLogResponse), PageRequest.of(0, 15), 1);
 
         when(userActivityLogService.getLogs(any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(mockPage);

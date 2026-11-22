@@ -15,9 +15,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -51,7 +53,9 @@ class AdminUserControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(adminUserController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(adminUserController)
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
+                .build();
         objectMapper = new ObjectMapper();
 
         sampleDto = AdminUserSummaryDto.builder()
@@ -70,7 +74,7 @@ class AdminUserControllerTest {
     @Test
     @DisplayName("getUsers_withFilterGroup_returns200: Goi GET /api/v1/admin/users?filterGroup=recent_7d tra ve HTTP 200 kem data phan trang")
     void getUsers_withFilterGroup_returns200() throws Exception {
-        Page<AdminUserSummaryDto> page = new PageImpl<>(List.of(sampleDto));
+        Page<AdminUserSummaryDto> page = new PageImpl<>(List.of(sampleDto), PageRequest.of(0, 10), 1);
         when(adminUserService.getUsers(eq(null), eq(null), eq(null), eq("recent_7d"), any(Pageable.class)))
                 .thenReturn(page);
 

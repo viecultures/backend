@@ -258,14 +258,15 @@ class AdminUserServiceTest {
         String csvContent = new String(csvBytes, StandardCharsets.UTF_8);
 
         // Kiem tra header chuan tieng Viet
-        assertTrue(csvContent.contains("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Từ đã lưu,Phương thức đăng nhập,Ngày tạo,Trạng thái"));
+        assertTrue(csvContent.contains("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Gói hội viên,Phương thức đăng nhập,Ngày tạo,Trạng thái"));
 
         // Kiem tra du lieu escape dau phay va ngoac kep: "Nguyen, ""Van"" Special"
         assertTrue(csvContent.contains("\"Nguyen, \"\"Van\"\" Special\""));
         assertTrue(csvContent.contains("special@viecultures.com"));
         assertTrue(csvContent.contains("Quản trị viên"));
         assertTrue(csvContent.contains("C2"));
-        assertTrue(csvContent.contains("42"));
+        assertTrue(csvContent.contains("Hội Viên Pro (Admin)"));
+        assertTrue(csvContent.contains("LOCAL"));
         assertTrue(csvContent.contains("Đang hoạt động"));
         assertTrue(csvContent.contains("02/11/2026 08:30:00"));
     }
@@ -286,7 +287,7 @@ class AdminUserServiceTest {
         assertEquals((byte) 0xBF, csvBytes[2]);
 
         String csvContent = new String(csvBytes, StandardCharsets.UTF_8);
-        assertTrue(csvContent.contains("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Từ đã lưu,Phương thức đăng nhập,Ngày tạo,Trạng thái"));
+        assertTrue(csvContent.contains("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Gói hội viên,Phương thức đăng nhập,Ngày tạo,Trạng thái"));
 
         // Chi co 1 dong header duy nhat (sau BOM)
         String contentWithoutBom = csvContent.substring(1).trim();
@@ -310,7 +311,7 @@ class AdminUserServiceTest {
         assertEquals((byte) 0xBF, fallbackBytes[2]);
 
         String content = new String(fallbackBytes, StandardCharsets.UTF_8);
-        assertTrue(content.contains("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Từ đã lưu,Phương thức đăng nhập,Ngày tạo,Trạng thái"));
+        assertTrue(content.contains("ID,Họ và tên,Email,Vai trò,Trình độ CEFR,Gói hội viên,Phương thức đăng nhập,Ngày tạo,Trạng thái"));
     }
 
     @Test
