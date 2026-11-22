@@ -130,33 +130,10 @@ backend/
     │   │   │       ├── service/               # AdminOverviewService, AdminUserService, AdminAiConfigService, etc.
     │   │   │       └── dto/                   # AdminOverviewStatsDto, LearnerDetailDto, etc.
     │   │   │
-    │   │   ├── controller/                    # REST API Endpoints (@RestController)
-    │   │   │   ├── AuthController.java        # /api/v1/auth (Login, Register, Google OAuth, Me)
-    │   │   │   ├── HealthController.java      # GET /api/health
-    │   │   │   ├── ReadingPostController.java # /api/posts (Catalog, CRUD, Read count)
-    │   │   │   ├── TtsController.java          # POST /api/tts (Audio stream, MD5 cache, fallback)
-    │   │   │   └── VoiceController.java       # /api/voice (Models, multi-speed track generation)
+    │   │   ├── controller/                    # Global / System Endpoints (@RestController)
+    │   │   │   └── HealthController.java      # GET /api/health
     │   │   │
-    │   │   ├── dto/                           # Data Transfer Objects (Requests & Responses)
-    │   │   │   ├── ApiResponse.java           # Unified JSON response envelope (success, data, message, errorCode)
-    │   │   │   ├── AuthRequest.java           # Login request (email, password)
-    │   │   │   ├── AuthResponse.java          # Auth result envelope (accessToken, expiresIn, UserInfo)
-    │   │   │   ├── CatalogLessonDto.java      # Grouped multi-level reading post DTO
-    │   │   │   ├── CatalogResponse.java       # Catalog pagination + topic counters envelope
-    │   │   │   ├── GenerateVoiceTrackRequest.java # Voice track generation payload
-    │   │   │   ├── GoogleLoginRequest.java    # Google OAuth ID Token / Profile payload
-    │   │   │   ├── ReadingPostRequest.java    # Create/update post request (nested paragraphs/vocab)
-    │   │   │   ├── ReadingPostResponse.java   # Post detail & summary response
-    │   │   │   ├── RegisterRequest.java       # Learner registration payload
-    │   │   │   ├── TtsErrorResponse.java      # Standard TTS error envelope
-    │   │   │   ├── TtsRequest.java            # TTS synthesis request payload
-    │   │   │   ├── TtsResult.java             # Internal TTS byte array result + headers
-    │   │   │   ├── VoiceGenerateRequest.java  # Legacy Gemini voice request
-    │   │   │   ├── VoiceGenerateResponse.java # Legacy Gemini voice response
-    │   │   │   ├── VoiceModelDto.java         # Voice actor profile DTO
-    │   │   │   └── VoiceTrackResponse.java    # Slow/Fast audio URLs response
-    │   │   │
-    │   │   ├── entity/                        # JPA Database Entities
+    │   │   ├── entity/                        # Shared JPA Database Entities
     │   │   │   ├── CefrLevel.java             # Enum: A1, A2, B1, B2, C1, C2
     │   │   │   ├── ParagraphPair.java         # Bilingual paragraph entity (en_text, vi_text, timestamps)
     │   │   │   ├── ReadingPost.java           # Reading article root aggregate entity
